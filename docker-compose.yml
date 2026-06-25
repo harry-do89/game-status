@@ -1,24 +1,9 @@
 services:
   all-in-one:
     build: .
-    container_name: all-in-one
+    container_name: game-status
     env_file:
       - "./.env"
-    # Publish the port so it's reachable at http://localhost:8080 on any host
-    # (macOS Docker Desktop does not expose `network_mode: host` to the Mac).
-    # ports:
-    #   - "8080:8080"
     network_mode: host
     restart: always
 
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: cloudflared
-    command: tunnel --no-autoupdate run --token eyJhIjoiOTdjNTYyMmU5ZjM4ZTRmNzNlZjI1ZjJhM2M3NzMxODUiLCJ0IjoiZTQ1ZWUzY2YtNzIwMC00YWNhLWJhN2EtZTczNzNhODlmODhmIiwicyI6Ik0yWTFNRFkwTkdZdFl6Qm1NeTAwTXpVMkxXRmxaamt0TjJOaVl6QTVNak5pWkROaCJ9
-    environment:
-      # Bridge networking: reach the app by its compose service name.
-      - TUNNEL_URL=http://localhost:8080
-    restart: always
-    network_mode: host
-    depends_on:
-      - all-in-one
