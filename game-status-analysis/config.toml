@@ -1,0 +1,15 @@
+# Game Status board — the 5 Jira projects ("spaces") of the game-production flow.
+# Order matters: it drives the left-to-right column order in the flow diagram.
+#   ID   → IDEAS          GAME → GAMES         CER → CERTIFICATION
+#   LOC  → LOCALIZATION   RM   → RELEASE
+spaces = ["ID", "GAME", "CER", "LOC", "RM"]
+
+# WIP-limit fallback chain for the capacity colouring (current / limit):
+#   Jira board column `max`  →  [limits] override below  →  default_limit
+default_limit = 10
+
+[limits]
+# Optional per-status overrides. Key = "PROJECT:Status" (exact Jira status name).
+# Example:
+# "RM:Requested" = 8
+# "GAME:Development" = 15

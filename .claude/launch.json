@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "game-status",
+      "runtimeExecutable": "/Users/user/.pyenv/versions/3.12.2/bin/python3",
+      "runtimeArgs": ["game-status-analysis/server.py"],
+      "port": 5000,
+      "autoPort": true
+    },
+    {
+      "name": "priority-queue",
+      "runtimeExecutable": "/Users/user/.pyenv/versions/3.12.2/bin/python3",
+      "runtimeArgs": ["board-priority-queue/server.py"],
+      "port": 5056,
+      "autoPort": true
+    }
+  ]
+}

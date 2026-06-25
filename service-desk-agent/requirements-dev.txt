@@ -1,0 +1,4 @@
+pytest>=7.4
+dotenv
+google-genai
+google-api-python-client

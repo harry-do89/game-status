@@ -1,0 +1,9 @@
+# Keep the Docker build context lean. Do NOT exclude .env or credentials/ —
+# build-time extractors need each board's .env (COPY . . carries them in).
+**/.venv/
+**/venv/
+**/__pycache__/
+**/.pytest_cache/
+.git/
+**/result/
+*-main-old/

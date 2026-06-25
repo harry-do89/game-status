@@ -1,0 +1,12 @@
+./sup-analysis-main-old
+./service-desk-agent-main-old
+./pact_verticals_analysis-main-old
+**/.env
+
+# Python virtual environments
+**/.venv/
+**/venv/
+
+# Python bytecode (auto-generated, must never be tracked)
+**/__pycache__/
+*.pyc

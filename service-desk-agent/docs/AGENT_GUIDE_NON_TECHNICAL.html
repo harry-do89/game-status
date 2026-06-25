@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PACT Triage Agent — How It Works</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      color: #1a1a2e;
+      background: #f5f6fa;
+    }
+
+    /* Layout */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 240px;
+      height: 100vh;
+      background: #1a1a2e;
+      overflow-y: auto;
+      padding: 24px 0;
+      z-index: 100;
+    }
+
+    .sidebar-logo {
+      padding: 0 20px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      margin-bottom: 16px;
+    }
+
+    .sidebar-logo span {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 4px;
+    }
+
+    .sidebar-logo strong {
+      color: #fff;
+      font-size: 14px;
+    }
+
+    .sidebar nav a {
+      display: block;
+      padding: 7px 20px;
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      font-size: 13px;
+      transition: color 0.15s, background 0.15s;
+      border-left: 3px solid transparent;
+    }
+
+    .sidebar nav a:hover,
+    .sidebar nav a.active {
+      color: #fff;
+      background: rgba(255,255,255,0.05);
+      border-left-color: #4f8ef7;
+    }
+
+    .sidebar nav .nav-section {
+      padding: 16px 20px 4px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.25);
+    }
+
+    main {
+      margin-left: 240px;
+      padding: 48px 64px;
+      max-width: 960px;
+    }
+
+    /* Hero */
+    .hero {
+      margin-bottom: 48px;
+    }
+
+    .hero h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 6px;
+    }
+
+    .hero .subtitle {
+      font-size: 15px;
+      color: #6b7280;
+    }
+
+    /* Sections */
+    section {
+      margin-bottom: 56px;
+      scroll-margin-top: 24px;
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #374151;
+      margin: 24px 0 10px;
+    }
+
+    p { margin-bottom: 12px; color: #374151; }
+
+    /* Cards */
+    .card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+
+    /* Flow steps */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .flow-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px 20px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .flow-step:last-child { border-bottom: none; }
+
+    .flow-step .step-num {
+      min-width: 28px;
+      height: 28px;
+      background: #4f8ef7;
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    .flow-step .step-body strong {
+      display: block;
+      font-size: 14px;
+      color: #1a1a2e;
+      margin-bottom: 2px;
+    }
+
+    .flow-step .step-body span {
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+
+    thead tr { background: #f9fafb; }
+
+    th {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #6b7280;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    td {
+      padding: 11px 14px;
+      border-bottom: 1px solid #f3f4f6;
+      color: #374151;
+      vertical-align: top;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    code {
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 12px;
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #1a1a2e;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-yes  { background: #d1fae5; color: #065f46; }
+    .badge-no   { background: #fee2e2; color: #991b1b; }
+    .badge-warn { background: #fef3c7; color: #92400e; }
+
+    /* Priority badges */
+    .badge-critical { background: #fee2e2; color: #991b1b; }
+    .badge-high     { background: #ffedd5; color: #9a3412; }
+    .badge-medium   { background: #fef9c3; color: #854d0e; }
+    .badge-low      { background: #d1fae5; color: #065f46; }
+
+    /* Callouts */
+    .callout {
+      display: flex;
+      gap: 12px;
+      padding: 14px 18px;
+      border-radius: 8px;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+
+    .callout-info    { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+    .callout-warning { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+    .callout-danger  { background: #fff1f2; border-left: 4px solid #f43f5e; color: #9f1239; }
+
+    .callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+    /* GChat preview */
+    .gchat-preview {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      overflow: hidden;
+      font-size: 13px;
+      max-width: 380px;
+    }
+
+    .gchat-header {
+      background: #1a73e8;
+      color: #fff;
+      padding: 10px 14px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .gchat-row {
+      display: flex;
+      padding: 8px 14px;
+      border-bottom: 1px solid #f3f4f6;
+      gap: 8px;
+    }
+
+    .gchat-row:last-child { border-bottom: none; }
+
+    .gchat-label {
+      min-width: 90px;
+      font-weight: 600;
+      color: #6b7280;
+      font-size: 12px;
+    }
+
+    .gchat-value { color: #1a1a2e; }
+
+    .gchat-link { color: #1a73e8; text-decoration: none; font-weight: 600; }
+
+    /* Mode cards */
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .mode-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    .mode-card .mode-label {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
+
+    .mode-on   .mode-label { background: #d1fae5; color: #065f46; }
+    .mode-test .mode-label { background: #fef3c7; color: #92400e; }
+    .mode-off  .mode-label { background: #f3f4f6; color: #6b7280; }
+
+    .mode-card p { font-size: 13px; margin: 0; color: #6b7280; }
+
+    /* FAQ */
+    .faq-item {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .faq-q {
+      padding: 14px 18px;
+      font-weight: 600;
+      font-size: 14px;
+      color: #1a1a2e;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+
+    .faq-q::after {
+      content: "﹢";
+      font-size: 18px;
+      color: #9ca3af;
+      transition: transform 0.2s;
+    }
+
+    .faq-item input { display: none; }
+
+    .faq-item input:checked ~ .faq-q::after { content: "−"; }
+
+    .faq-a {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+      font-size: 14px;
+      color: #374151;
+    }
+
+    .faq-item input:checked ~ .faq-a {
+      max-height: 300px;
+    }
+
+    .faq-a-inner {
+      padding: 0 18px 16px;
+      border-top: 1px solid #f3f4f6;
+    }
+
+    /* Priority assignment */
+    .priority-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .priority-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+
+    .priority-num {
+      min-width: 24px;
+      height: 24px;
+      background: #f3f4f6;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #6b7280;
+      margin-top: 1px;
+    }
+
+    .priority-item strong { display: block; font-size: 14px; color: #1a1a2e; }
+    .priority-item span   { font-size: 13px; color: #6b7280; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      main { margin-left: 0; padding: 24px 20px; }
+      .mode-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span>Documentation</span>
+    <strong>PACT Triage Agent</strong>
+  </div>
+  <nav>
+    <div class="nav-section">Overview</div>
+    <a href="#what-is">What Is the Agent?</a>
+    <a href="#triggers">What Triggers It?</a>
+    <a href="#journey">Ticket Journey</a>
+
+    <div class="nav-section">How It Works</div>
+    <a href="#assignment">PIC Assignment</a>
+    <a href="#what-team-sees">What Your Team Sees</a>
+    <a href="#what-agent-does">What the Agent Does</a>
+    <a href="#declined">Declined Path (Non-English)</a>
+
+    <div class="nav-section">Admin</div>
+    <a href="#report-card">Admin Report Card</a>
+    <a href="#modes">Agent Modes</a>
+    <a href="#mistakes">If Agent Makes a Mistake</a>
+    <a href="#sheet">Google Sheet Config</a>
+
+    <div class="nav-section">Help</div>
+    <a href="#faq">FAQ</a>
+  </nav>
+</aside>
+
+<!-- Main content -->
+<main>
+  <div class="hero">
+    <h1>PACT Triage Agent — How It Works</h1>
+    <p class="subtitle">A guide for non-technical team members</p>
+  </div>
+
+  <!-- What Is -->
+  <section id="what-is">
+    <h2>What Is the PACT Triage Agent?</h2>
+    <div class="card">
+      <p>The PACT Triage Agent is an AI assistant that automatically processes every new support ticket submitted to the PACT Service Desk. Instead of a human manually reading each ticket, deciding its priority, figuring out which team should handle it, and then notifying that team — the agent does all of this within seconds of the ticket being created.</p>
+      <p style="margin:0">Think of it as a <strong>smart receptionist that never sleeps</strong>: it reads every incoming request, decides where it needs to go, assigns the right person, and notifies the right team — all automatically.</p>
+    </div>
+  </section>
+
+  <!-- Triggers -->
+  <section id="triggers">
+    <h2>What Triggers the Agent?</h2>
+    <p>The agent is connected to Jira Service Management (JSM). It activates automatically when:</p>
+    <table>
+      <thead><tr><th>Event</th><th>What the agent does</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>A new ticket is created</td>
+          <td>Classifies it, assigns a PIC, routes it to the correct team</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Journey -->
+  <section id="journey">
+    <h2>The Journey of a Ticket</h2>
+    <p>When a support ticket is submitted, here is what happens step by step:</p>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Customer submits ticket</strong>
+          <span>Via the JSM portal</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Agent reads the ticket</strong>
+          <span>Summary, description, Game ID, request type</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>AI (Gemini) analyses the ticket and decides</strong>
+          <span>Priority (Critical / High / Medium / Low) · Which board to route to · Confidence level</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Agent updates the ticket in Jira</strong>
+          <span>Sets priority · Assigns the correct PIC · Posts an internal note with the triage summary</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <strong>Agent creates a clone on the destination board</strong>
+          <span>Bug Tracker, Portfolio, DevOps, RNG Task, or Back Office</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <strong>Agent notifies the team via Google Chat</strong>
+          <span>A card appears in your team's space</span>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">7</div>
+        <div class="step-body">
+          <strong>Agent posts a report card to the Admin Audit space</strong>
+          <span>Full audit trail of every action taken</span>
+        </div>
+      </div>
+    </div>
+    <p style="margin-top:12px; color:#6b7280; font-size:13px;">The entire process takes about <strong>10–15 seconds</strong>.</p>
+  </section>
+
+  <!-- Assignment -->
+  <section id="assignment">
+    <h2>How Does the Agent Know Who to Assign?</h2>
+    <p>Assignment is based on the <strong>Game ID</strong> field in the ticket. Each game is mapped to a specific team and a PIC (Person in Charge) in a configuration spreadsheet (Google Sheets).</p>
+    <div class="priority-list">
+      <div class="priority-item">
+        <div class="priority-num">1</div>
+        <div>
+          <strong>Game ID match</strong>
+          <span>If the ticket has a known Game ID, it goes directly to the team and PIC configured for that game.</span>
+        </div>
+      </div>
+      <div class="priority-item">
+        <div class="priority-num">2</div>
+        <div>
+          <strong>DevOps Support tickets</strong>
+          <span>Automatically assigned to the DevOps fallback PIC regardless of game.</span>
+        </div>
+      </div>
+      <div class="priority-item">
+        <div class="priority-num">3</div>
+        <div>
+          <strong>No match / missing Game ID</strong>
+          <span>Assigned to the general fallback PIC, and a ⚠️ warning appears in the report card.</span>
+        </div>
+      </div>
+    </div>
+    <div class="callout callout-info" style="margin-top:16px">
+      <span class="callout-icon">ℹ️</span>
+      <span>If you notice ⚠️ warnings appearing frequently for a specific game, it means that game's ID is not yet in the configuration sheet. Contact the system administrator to add it.</span>
+    </div>
+  </section>
+
+  <!-- What Team Sees -->
+  <section id="what-team-sees">
+    <h2>What Your Team Sees</h2>
+
+    <h3>1. Google Chat Notification</h3>
+    <p>When a ticket is assigned to your team, a card appears in your team's Google Chat space:</p>
+    <div class="gchat-preview">
+      <div class="gchat-header">🎫 New ticket assigned</div>
+      <div class="gchat-row">
+        <span class="gchat-label">Ticket</span>
+        <span class="gchat-value"><a href="#" class="gchat-link">SUP-612</a></span>
+      </div>
+      <div class="gchat-row">
+        <span class="gchat-label">Summary</span>
+        <span class="gchat-value">Game crashes on login screen</span>
+      </div>
+      <div class="gchat-row">
+        <span class="gchat-label">Description</span>
+        <span class="gchat-value">Players receive error 403 since 9am</span>
+      </div>
+      <div class="gchat-row">
+        <span class="gchat-label">Game ID</span>
+        <span class="gchat-value">1969</span>
+      </div>
+      <div class="gchat-row">
+        <span class="gchat-label">Priority</span>
+        <span class="gchat-value"><span class="badge badge-critical">Critical</span></span>
+      </div>
+    </div>
+
+    <h3>2. Jira Ticket Updates</h3>
+    <div class="card">
+      <p>Opening the ticket in Jira, you will see:</p>
+      <ul style="padding-left:20px; color:#374151; font-size:14px; line-height:2">
+        <li><strong>Priority</strong> has been set automatically</li>
+        <li><strong>Assignee</strong> has been set to the PIC for that game</li>
+        <li>An <strong>internal note</strong> (visible to agents only, not the customer) with the full triage decision, including which board it was routed to and why</li>
+      </ul>
+    </div>
+
+    <h3>3. Cloned Task on Your Team Board</h3>
+    <div class="card">
+      <p style="margin:0">A copy of the ticket appears on your team's board (Bug Tracker, Portfolio, DevOps, or RNG Task) — ready to be worked on.</p>
+    </div>
+  </section>
+
+  <!-- What Agent Does -->
+  <section id="what-agent-does">
+    <h2>What the Agent Can Do</h2>
+    <div class="card">
+      <h3 style="margin-top:0">Triage (classify &amp; route)</h3>
+      <p style="margin:0">Every new ticket → classified by AI → priority set → PIC assigned → routed to correct board → team notified.</p>
+    </div>
+  </section>
+
+  <!-- Declined -->
+  <section id="declined">
+    <h2>The Declined Path</h2>
+    <p>The agent will automatically <strong>decline</strong> tickets that are not submitted in English.</p>
+    <div class="card">
+      <p><strong>When declined:</strong></p>
+      <ul style="padding-left:20px; color:#374151; font-size:14px; line-height:2; margin:0">
+        <li>A polite message is posted on the ticket explaining it was declined</li>
+        <li>The ticket is automatically moved to <strong>"Decline"</strong> status</li>
+        <li>No further triage happens</li>
+      </ul>
+    </div>
+    <p>This ensures the service desk only processes tickets submitted in English.</p>
+  </section>
+
+  <!-- Report Card -->
+  <section id="report-card">
+    <h2>The Admin Report Card</h2>
+    <p>After every action, the agent sends a detailed <strong>report card</strong> to the Admin Audit space in Google Chat. This is always sent regardless of whether the agent is in live mode or test mode.</p>
+    <div class="card">
+      <p><strong>The report card shows:</strong></p>
+      <ul style="padding-left:20px; color:#374151; font-size:14px; line-height:2; margin:0">
+        <li>Which ticket was processed</li>
+        <li>What the AI decided (priority, board, request type, confidence)</li>
+        <li>What actions were taken (assignee set, comment posted, clone created, team notified)</li>
+        <li>How long it took</li>
+        <li>Any warnings or errors</li>
+      </ul>
+    </div>
+    <div class="callout callout-info">
+      <span class="callout-icon">💡</span>
+      <span>This is the audit trail — useful for checking why a ticket was routed a certain way, or investigating if something went wrong.</span>
+    </div>
+  </section>
+
+  <!-- Modes -->
+  <section id="modes">
+    <h2>Agent Modes</h2>
+    <p>The agent has three operating modes. The current mode is shown on every report card.</p>
+    <div class="mode-grid">
+      <div class="mode-card mode-on">
+        <div class="mode-label">ON</div>
+        <p>Fully active. Updates Jira, sends all notifications, creates clones.</p>
+      </div>
+      <div class="mode-card mode-test">
+        <div class="mode-label">TEST</div>
+        <p>AI runs and decisions are logged, but nothing is written to Jira and no notifications are sent.</p>
+      </div>
+      <div class="mode-card mode-off">
+        <div class="mode-label">OFF</div>
+        <p>Agent is paused. All incoming requests are acknowledged but not processed.</p>
+      </div>
+    </div>
+    <p style="margin-top:12px; font-size:13px; color:#6b7280">The default mode when the agent starts is <strong>TEST</strong>. The system administrator switches it to <strong>ON</strong> when ready for live use.</p>
+  </section>
+
+  <!-- Mistakes -->
+  <section id="mistakes">
+    <h2>What Happens If the Agent Makes a Mistake?</h2>
+    <p>The agent includes a confidence score with every decision. If you notice a ticket was routed to the wrong board or assigned the wrong priority:</p>
+    <div class="card">
+      <ol style="padding-left:20px; color:#374151; font-size:14px; line-height:2.2; margin:0">
+        <li>The ticket can be manually corrected in Jira — the agent does not lock any fields</li>
+        <li>The triage can be re-run manually by the system administrator for any ticket that was missed or incorrectly processed</li>
+        <li>Check the Admin Audit space in Google Chat for the report card to see exactly what the AI decided and why</li>
+      </ol>
+    </div>
+    <div class="callout callout-warning">
+      <span class="callout-icon">⚠️</span>
+      <span>The AI is not perfect — it relies on the quality of the ticket's summary and description. Tickets with very short or vague descriptions may receive lower confidence scores.</span>
+    </div>
+  </section>
+
+  <!-- Google Sheet -->
+  <section id="sheet">
+    <h2>Configuration: The Google Sheet</h2>
+    <p>The PIC assignment rules live in a Google Sheet maintained by the system administrator. It has three tabs.</p>
+
+    <h3>Tab 1 — <code>fallback</code></h3>
+    <p>Defines all PICs and which one is the default assignee when no Game ID match is found.</p>
+    <table>
+      <thead><tr><th>Column</th><th>Description</th><th>Can edit?</th></tr></thead>
+      <tbody>
+        <tr><td><code>pic_name</code></td><td>Display name shown in notifications and report cards</td><td><span class="badge badge-yes">✅ Yes</span></td></tr>
+        <tr><td><code>pic_email</code></td><td>Jira account email — must match exactly</td><td><span class="badge badge-warn">⚠️ Only if email changed</span></td></tr>
+        <tr><td><code>pic_account_id</code></td><td>Jira internal account ID — used for assignment</td><td><span class="badge badge-no">❌ Do not edit</span></td></tr>
+        <tr><td><code>role</code></td><td><code>general</code> = default fallback · <code>devops</code> = DevOps fallback · blank = regular PIC</td><td><span class="badge badge-warn">⚠️ Do not change</span></td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout-danger">
+      <span class="callout-icon">🚨</span>
+      <span>There must always be exactly <strong>one row with <code>role = general</code></strong> and <strong>one row with <code>role = devops</code></strong>. Removing or duplicating these breaks assignment.</span>
+    </div>
+
+    <h3>Tab 2 — <code>by_game_id</code></h3>
+    <p>Maps each Game ID to a team and PIC. <strong>This is the tab you will edit most often.</strong></p>
+    <table>
+      <thead><tr><th>Column</th><th>Description</th><th>Can edit?</th></tr></thead>
+      <tbody>
+        <tr><td><code>game_id</code></td><td>The Game ID as it appears in the JSM ticket field</td><td><span class="badge badge-no">❌ Do not change</span></td></tr>
+        <tr><td><code>team_name</code></td><td>Display name of the team</td><td><span class="badge badge-yes">✅ Yes</span></td></tr>
+        <tr><td><code>team_id</code></td><td>Jira team UUID — used to assign the team on the cloned task</td><td><span class="badge badge-no">❌ Do not edit</span></td></tr>
+        <tr><td><code>pic_email</code></td><td>Email of the PIC for this game — must exist in the <code>fallback</code> tab</td><td><span class="badge badge-yes">✅ Yes (to reassign)</span></td></tr>
+        <tr><td><code>active</code></td><td><code>TRUE</code> = rule is active · <code>FALSE</code> = ignored by agent</td><td><span class="badge badge-yes">✅ Yes</span></td></tr>
+      </tbody>
+    </table>
+
+    <div class="card">
+      <p><strong>When to add a new row:</strong></p>
+      <ul style="padding-left:20px; font-size:14px; line-height:2; color:#374151; margin-bottom:12px">
+        <li>A new game is onboarded and starts submitting tickets to the service desk</li>
+        <li>You notice ⚠️ warnings in the Admin Audit space for a Game ID that is not yet listed</li>
+      </ul>
+      <p><strong>How to add a new game:</strong></p>
+      <ol style="padding-left:20px; font-size:14px; line-height:2; color:#374151; margin-bottom:12px">
+        <li>Get the Game ID from the JSM ticket (the value in the "Game ID" field)</li>
+        <li>Get the team's Jira team UUID from the system administrator</li>
+        <li>Add a new row with all five columns filled in and <code>active = TRUE</code></li>
+        <li>Changes take effect within 5 minutes — no restart required</li>
+      </ol>
+      <p style="margin:0"><strong>To deactivate a game</strong> (e.g. game is retired): set <code>active = FALSE</code>. Do not delete the row.</p>
+    </div>
+
+    <h3>Tab 3 — <code>special_rules</code></h3>
+    <p>Feature flags that turn agent behaviours on or off.</p>
+    <table>
+      <thead><tr><th>Column</th><th>Description</th><th>Can edit?</th></tr></thead>
+      <tbody>
+        <tr><td><code>rule_name</code></td><td>Internal rule identifier</td><td><span class="badge badge-no">❌ Do not edit</span></td></tr>
+        <tr><td><code>enabled</code></td><td><code>TRUE</code> or <code>FALSE</code></td><td><span class="badge badge-yes">✅ Yes</span></td></tr>
+        <tr><td><code>notes</code></td><td>Description of what the rule does</td><td><span class="badge badge-yes">✅ Yes</span></td></tr>
+      </tbody>
+    </table>
+    <table>
+      <thead><tr><th>Rule</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>vnd_vietnamese_detection</code></td>
+          <td>When <code>TRUE</code>, tickets not submitted in English are automatically declined</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-danger">
+      <span class="callout-icon">🚨</span>
+      <span><strong>Important:</strong> Never add or remove columns in any tab. Never rename column headers. The agent reads columns by position — changing the structure will cause it to misread the data.</span>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <h2>Frequently Asked Questions</h2>
+
+    <div class="faq-item">
+      <input type="checkbox" id="faq1" />
+      <label class="faq-q" for="faq1">Why did a ticket get assigned to the wrong person?</label>
+      <div class="faq-a"><div class="faq-a-inner">The ticket's Game ID was either missing or not found in the configuration sheet. The agent falls back to the general PIC and adds a ⚠️ warning in the report card. Check the Admin Audit space for that ticket.</div></div>
+    </div>
+
+    <div class="faq-item">
+      <input type="checkbox" id="faq2" />
+      <label class="faq-q" for="faq2">Why did a ticket not get processed?</label>
+      <div class="faq-a"><div class="faq-a-inner">Possible reasons: the agent was in TEST or OFF mode, the Game ID field was blank, or the agent encountered an error. Check the Admin Audit space — a report card is always sent even for errors.</div></div>
+    </div>
+
+    <div class="faq-item">
+      <input type="checkbox" id="faq3" />
+      <label class="faq-q" for="faq3">Can the agent process a ticket that was missed?</label>
+      <div class="faq-a"><div class="faq-a-inner">Yes. The system administrator can manually re-trigger triage for any ticket using its ticket key (e.g. SUP-123).</div></div>
+    </div>
+
+    <div class="faq-item">
+      <input type="checkbox" id="faq4" />
+      <label class="faq-q" for="faq4">Will the agent post public comments that customers can see?</label>
+      <div class="faq-a"><div class="faq-a-inner">The triage note posted by the agent is an <strong>internal comment</strong> — customers cannot see it. Only the "Declined" message (when applicable) is posted as a public reply.</div></div>
+    </div>
+
+    <div class="faq-item">
+      <input type="checkbox" id="faq5" />
+      <label class="faq-q" for="faq5">How do I know which team was notified?</label>
+      <div class="faq-a"><div class="faq-a-inner">Check your team's Google Chat space for the notification card, or check the Admin Audit space report card which lists every action taken including which clone was created.</div></div>
+    </div>
+  </section>
+
+</main>
+</body>
+</html>
