@@ -17,7 +17,6 @@ import requests
 import pandas as pd
 import time
 import os
-import re
 import sys
 import json
 from pathlib import Path
@@ -58,24 +57,19 @@ GAME_STAGES = [
     "Integration QC", "Optimization", "Packaging", "Done",
 ]
 
-# Development sub-task discipline labels, matched (case-insensitive, first match
-# wins) against the sub-task summary. Tune after inspecting real sub-tasks.
-SUBSTAGE_KEYWORDS = [
-    ("BE",       r"\b(be|backend|back[\s-]?end)\b"),
-    ("BO",       r"\b(bo|backoffice|back[\s-]?office)\b"),
-    ("Platform", r"\b(platform)\b"),
-    ("FE",       r"\b(fe|frontend|front[\s-]?end)\b"),
-    ("Math",     r"\b(math|maths|rng)\b"),
-]
+# Development sub-task team labels, keyed by the sub-task's project-key prefix
+# (e.g. MT-44 → "Math"). Loaded from config.toml [substage_teams]; the default
+# below is the fallback when that table is absent. A sub-task whose prefix is not
+# listed here is skipped.
+TEAM_PREFIX_MAP = _cfg.get("substage_teams") or {
+    "MT": "Math", "PF": "Platform", "BO": "BO", "RNG": "BE", "DEVOPS": "Devops",
+}
 
 
-def label_substage(summary: str) -> str:
-    """Return a discipline label (BE/BO/Platform/FE/Math) for a sub-task summary, or ""."""
-    s = (summary or "").lower()
-    for label, pattern in SUBSTAGE_KEYWORDS:
-        if re.search(pattern, s):
-            return label
-    return ""
+def team_for_key(key: str) -> str:
+    """Return the team label for a sub-task key by its project prefix, or ""."""
+    prefix = (key or "").split("-")[0]
+    return TEAM_PREFIX_MAP.get(prefix, "")
 
 
 # ---------------------------------------------------------
@@ -194,66 +188,69 @@ class JiraClient:
             time.sleep(0.5)
         return actuals
 
-    def fetch_substages(self, parents: list) -> dict:
-        """Return {parent_key: [{label, entered, exited, eta}]} for GAME sub-tasks.
+    def start_date_field_id(self):
+        """Resolve the "Start date" custom-field id once via GET /rest/api/3/field.
 
-        For each GAME parent we read its full `subtasks` list (so a parent's set is
-        always complete), label each child by summary keyword, and pull the child's
-        own fields + status changelog in one expand call:
-          entered = first status transition (work started; created date if none)
-          exited  = transition into the current status when it is Done-category, else None
-          eta     = the sub-task's Jira Due Date.
-        Best-effort: a per-child failure is logged and skipped.
+        Cached on the instance. Returns None (logged) if the field can't be found,
+        in which case every sub-task is treated as having no start date (skipped).
         """
+        if hasattr(self, "_start_field_id"):
+            return self._start_field_id
+        self._start_field_id = None
+        try:
+            r = requests.get(
+                f"{self.base_url}/field", auth=self.auth, headers=self.headers, timeout=30
+            )
+            if r.status_code == 200:
+                for field in r.json():
+                    if (field.get("name") or "").strip() == "Start date":
+                        self._start_field_id = field.get("id")
+                        break
+            else:
+                print(f"  ⚠ start-date field: HTTP {r.status_code}", flush=True)
+        except Exception as exc:
+            print(f"  ⚠ start-date field resolve failed: {exc}", flush=True)
+        if not self._start_field_id:
+            print("  ⚠ start-date field 'Start date' not found", flush=True)
+        return self._start_field_id
+
+    def fetch_substages(self, parents: list) -> dict:
+        """Return {parent_key: [{label, entered, exited, eta}]} for GAME team children.
+
+        Each GAME parent's per-team work lives in **child issues** (the Jira "Work"
+        panel — issues whose `parent` is the GAME ticket), in separate team projects
+        (MT, PF, RNG, BO, DEVOPS, …). For each child whose project-key prefix is a
+        known team (MT→Math, PF→Platform, …) we read its own Start date / Due date:
+          entered = the child's Start date (work begins). No Start date → skipped.
+          exited  = the child's Due date (work ends), or None ⇒ still in progress.
+          eta     = None (Start/Due are the plan; there is no separate ETA).
+        Best-effort: a per-parent failure is logged and skipped.
+        """
+        start_field = self.start_date_field_id()
+        fields = [f for f in ("summary", "duedate", start_field) if f]
         out: dict = {}
         for p in parents:
             pkey = p["key"]
-            children = (p.get("fields", {}).get("subtasks") or [])
+            try:
+                children = self._jql_search(f'parent = "{pkey}"', fields)
+            except Exception as exc:
+                print(f"  ⚠ substage children fetch failed for {pkey}: {exc}", flush=True)
+                continue
             rows = []
             for child in children:
                 ckey = child.get("key", "")
-                csummary = (child.get("fields", {}) or {}).get("summary", "")
-                label = label_substage(csummary)
-                if not ckey or not label:
-                    continue
-                try:
-                    url = f"{self.base_url}/issue/{ckey}"
-                    r = requests.get(
-                        url, auth=self.auth, headers=self.headers,
-                        params={"expand": "changelog", "fields": "summary,duedate,status,created"},
-                        timeout=30,
-                    )
-                    if r.status_code != 200:
-                        print(f"  ⚠ substage {ckey}: HTTP {r.status_code}", flush=True)
-                        continue
-                    data = r.json()
-                    f = data.get("fields", {})
-                    status_obj = f.get("status") or {}
-                    status_name = status_obj.get("name", "")
-                    status_cat = (status_obj.get("statusCategory") or {}).get("name", "")
-                    created = f.get("created", "")
-                    eta = str(f.get("duedate") or "")[:10] or None
-
-                    events = []
-                    for entry in data.get("changelog", {}).get("histories", []):
-                        ts = entry.get("created", "")
-                        for item in entry.get("items", []):
-                            if item.get("field") == "status":
-                                events.append({"created": ts, "to": item.get("toString", "")})
-                    events.sort(key=lambda e: e["created"])
-
-                    entered = events[0]["created"] if events else created
-                    exited = None
-                    if status_cat == "Done":
-                        done_evs = [e for e in events if e["to"] == status_name]
-                        exited = done_evs[-1]["created"] if done_evs else (events[-1]["created"] if events else None)
-
-                    rows.append({"label": label, "entered": entered, "exited": exited, "eta": eta})
-                    time.sleep(0.4)
-                except Exception as exc:
-                    print(f"  ⚠ substage fetch failed for {ckey}: {exc}", flush=True)
+                label = team_for_key(ckey)
+                if not label:
+                    continue  # not a known team project → skip
+                f = child.get("fields", {})
+                start = str((f.get(start_field) if start_field else None) or "")[:10]
+                if not start:
+                    continue  # no Start date → treat as having no timeline
+                end = str(f.get("duedate") or "")[:10] or None  # None ⇒ in progress
+                rows.append({"label": label, "entered": start, "exited": end, "eta": None})
             if rows:
                 out[pkey] = rows
+            time.sleep(0.3)
         return out
 
     def fetch_limits(self, projects: list) -> dict:

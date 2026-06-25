@@ -126,12 +126,21 @@ Top-level GAME timeline rows are **field-driven**, not changelog-driven.
 
 ### Development sub-stages
 
-Indented Development children (`BE`/`BO`/`Platform`/`FE`/`Math`) still come from
-the extractor cache file `result/game_status_substages.json`.
+Indented Development children (one row per team, e.g. `Math`/`Platform`/`BE`/`BO`/`Devops`)
+come from the extractor cache file `result/game_status_substages.json`.
 
-- `script/game_status_extractor.py` labels sub-tasks from their summaries, fetches
-  each child issue + changelog, and writes `{label, entered, exited, eta}` rows per
-  GAME parent.
+- Per-team work lives in **child issues** — the Jira "Work" panel, i.e. issues whose
+  `parent` is the GAME ticket — in separate team projects (`MT`/`PF`/`RNG`/`BO`/`DEVOPS`/…).
+  `script/game_status_extractor.py` queries each GAME parent's children via JQL
+  `parent = "<key>"`, labels each child by its **project-key prefix** (`MT`→Math,
+  `PF`→Platform, …) via the `[substage_teams]` table in `config.toml`; an unlisted
+  prefix is skipped (so a GAME parent can have multiple rows for one team, e.g. two
+  `RNG` children both → BE).
+- Dates come from the child's own **Start date / Due date** fields (no changelog):
+  - `entered` = the child's **Start date**. **No Start date → the row is omitted.**
+  - `exited` = the child's **Due date**, or `null` ⇒ treated as **in progress**.
+  - `eta` = `null` (Start/Due are the plan; there is no separate ETA).
+  The "Start date" field id is resolved at runtime by display name via `GET /rest/api/3/field`.
 - The timeline route merges those cached rows under the top-level `Development` row.
 
 ### Important implementation note
