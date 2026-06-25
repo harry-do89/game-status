@@ -63,7 +63,7 @@ echo ""
 $COMPOSE ps
 echo ""
 echo "╔══════════════════════════════════════════════╗"
-echo "  Dashboard: http://localhost:8081/dashboard"
+echo "  Dashboard: http://localhost:8081"
 echo "  Logs:      $COMPOSE logs -f game-status"
 echo "╚══════════════════════════════════════════════╝"
 

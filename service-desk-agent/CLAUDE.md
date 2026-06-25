@@ -6,8 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A thin Flask shell that hosts the Game Status dashboard. `scripts/main.py` is the
 only entrypoint: it loads the root `.env` + this component's `config.toml` via
-`config_loader.apply()`, dynamically mounts `game-status-analysis/server.py`'s
-Blueprint at `/game-status`, and redirects `/dashboard` to `/game-status/`.
+`config_loader.apply()`, and dynamically mounts `game-status-analysis/server.py`'s
+Blueprint at the **root** (`/`) — the dashboard IS the site, no `/game-status`
+prefix or `/dashboard` redirect.
 
 There is no AI/Jira-automation logic here anymore — this used to also host a
 Gemini-based triage agent (`/triage`, `/scan`, `/rewrite`, `/summarise`, `/detect`),
@@ -19,12 +20,12 @@ without being asked.
 ```bash
 cd scripts
 source venv/bin/activate
-python main.py         # starts Flask on port 8081 → /dashboard, /game-status/
+python main.py         # starts Flask on port 8081 → http://localhost:8081
 ```
 
 ## Module responsibilities
 
-- `main.py` — Flask app, `importlib`-mounts `game-status-analysis/server.py`'s Blueprint, `/dashboard` redirect
+- `main.py` — Flask app, `importlib`-mounts `game-status-analysis/server.py`'s Blueprint at root
 
 ## Required `.env` variables
 

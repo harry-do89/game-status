@@ -1062,13 +1062,12 @@ _PAGE = r"""<!DOCTYPE html>
     document.getElementById('refresh-msg').textContent = mode==='quick'
       ? '⚡ Fetching recently updated tickets…' : '🔄 Fetching all tickets from Jira…';
     try {
-      const base = window.location.pathname.startsWith('/game-status') ? '/game-status' : '';
-      await fetch(base + (mode==='quick' ? '/api/refresh' : '/api/refresh/full'), {method:'POST'});
+      await fetch(mode==='quick' ? '/api/refresh' : '/api/refresh/full', {method:'POST'});
       let n=0;
       const poll=setInterval(async ()=>{
         if(++n>100){ clearInterval(poll); showOverlayError('⚠ Timed out waiting for server.'); return; }
         try {
-          const s=await (await fetch(base + '/api/status')).json();
+          const s=await (await fetch('/api/status')).json();
           if(!s.running){
             clearInterval(poll);
             if(s.error){ localStorage.removeItem(STORAGE_KEY[mode]); updateButtons(); showOverlayError('⚠ '+s.error); }

@@ -13,10 +13,9 @@ must contain no braces). The page then exposes a single public function:
     openTimelineModal(key, { summary, studio, market, batch, category,
                              wishful, status, created })
 
-which fetches GET <base>/api/ticket/<key>/timeline (served once by
-game-status-analysis/server.py — every board reaches it via the absolute
-'/game-status' mount inside the shared Flask process) and renders the per-stage
-Gantt. On a non-GAME key or any fetch error it falls back to a planned-duration
+which fetches GET /api/ticket/<key>/timeline (served by game-status-analysis/server.py,
+mounted at root in the shared Flask process) and renders the per-stage Gantt.
+On a non-GAME key or any fetch error it falls back to a planned-duration
 estimate so the modal never breaks.
 
 Bar model (per row): a blue *Actual duration* bar, extended by a green *Time
@@ -257,21 +256,17 @@ TIMELINE_JS = r"""
 
     if (!String(key).startsWith('GAME-')) { estimate(); return; }
 
-    // The timeline endpoint lives on the game-status blueprint. Try its dashboard
-    // mount ('/game-status') first, then the standalone mount ('') so the modal works
-    // both inside /dashboard and when game-status runs on its own.
+    // The timeline endpoint lives on the game-status blueprint, mounted at root
+    // both standalone and inside the Flask shell.
     const path = '/api/ticket/' + encodeURIComponent(key) + '/timeline';
-    for (const base of ['/game-status', '']) {
-      try {
-        const resp = await fetch(base + path);
-        if (!resp.ok) continue;
+    try {
+      const resp = await fetch(path);
+      if (resp.ok) {
         const data = await resp.json();
         const stages = data.stages || [];
-        if (!stages.length || data.estimated) { estimate(); return; }
-        tlRenderRows(stages);
-        return;
-      } catch (err) { /* try next base */ }
-    }
+        if (stages.length && !data.estimated) { tlRenderRows(stages); return; }
+      }
+    } catch (err) { /* fall through to estimate */ }
     estimate();
   }
 

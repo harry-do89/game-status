@@ -8,16 +8,16 @@ when you actually touch that project.
 
 A single Jira tenant (`vvortech.atlassian.net`) analytics suite for an
 online-gaming engineering org. It has **one read-only analytics dashboard**
-("Game Status"), served by a thin Flask shell and exposed publicly via a
-Cloudflare tunnel (see `docker-compose.yml`).
+("Game Status"), served by a thin Flask shell (see `docker-compose.yml`).
 
 ```
                          ┌─────────────────────────────────────────────┐
                          │  service-desk-agent (Flask, port 8081)        │
                          │  scripts/main.py = the ONE entrypoint         │
                          │                                               │
-                         │  /dashboard        → redirects to             │
-                         │  /game-status/     → game-status-analysis     │
+                         │  /                 → game-status-analysis     │
+                         │                       (served directly, no    │
+                         │                        prefix/redirect)       │
                          └─────────────────────────────────────────────┘
                                              │
                                       Jira REST API v3
@@ -27,13 +27,13 @@ Cloudflare tunnel (see `docker-compose.yml`).
 
 | Folder | Role | Mount | Entry to read its AGENTS.md when… |
 |---|---|---|---|
-| `service-desk-agent/` | Thin Flask shell that mounts and serves the dashboard. | serves `:8081`, `/dashboard` | touching the Flask host or mount logic |
-| `game-status-analysis/` | "Game Status" SVG flow graph across 5 spaces (ID/GAME/CER/LOC/RM); node = status w/ live count, click → ticket list | `/game-status` | changing Game Status flow/layout |
+| `service-desk-agent/` | Thin Flask shell that mounts and serves the dashboard. | serves `:8081` | touching the Flask host or mount logic |
+| `game-status-analysis/` | "Game Status" SVG flow graph across 5 spaces (ID/GAME/CER/LOC/RM); node = status w/ live count, click → ticket list | `/` (root) | changing Game Status flow/layout |
 
 ### Game Status timeline note
 
 `game-status-analysis` has one extra live API beyond the standard dashboard
-refresh/status routes: `GET /game-status/api/ticket/<GAME-key>/timeline`.
+refresh/status routes: `GET /api/ticket/<GAME-key>/timeline`.
 
 - It is used by the shared ticket timeline modal (`shared/timeline_modal.py`).
 - Top-level GAME stages in that modal are **not** built from Jira changelog anymore.
@@ -60,14 +60,13 @@ refresh/status routes: `GET /game-status/api/ticket/<GAME-key>/timeline`.
 3. **Serve** — `server.py` exports a Flask **Blueprint** with 4 routes:
    `GET /` (serves the HTML, `no-cache`), `POST /api/refresh` (incremental),
    `POST /api/refresh/full` (full), `GET /api/status`. `main.py` mounts the
-   Blueprint at `/game-status` via `importlib`.
+   Blueprint at the **root** (`/`) via `importlib` — no `/game-status` prefix.
 
 **Refresh buttons** (on the board): two floating buttons run the pipeline in a
-background thread. The client JS derives its API prefix from
-`window.location.pathname` (e.g. `startsWith('/game-status') ? '/game-status' : ''`)
-so the same HTML works standalone (`/`) and inside the dashboard iframe
-(`/game-status/`). It then polls `/api/status` until `running:false` and reloads.
-Cooldowns persist in `localStorage` with a `gs_` key prefix.
+background thread, calling `/api/refresh`/`/api/refresh/full` directly (no
+prefix detection needed — the blueprint is always mounted at root). They then
+poll `/api/status` until `running:false` and reload. Cooldowns persist in
+`localStorage` with a `gs_` key prefix.
 
 **Conventions:**
 - "Resolved/Done" statuses + an **effective resolved date** fallback chain
@@ -81,10 +80,10 @@ Cooldowns persist in `localStorage` with a `gs_` key prefix.
 
 `main.py` is the only entrypoint. It loads the root `.env` + its own
 `config_loader.apply()`, dynamically mounts `game-status-analysis/server.py`'s
-Blueprint at `/game-status` via `importlib`, and redirects `/dashboard` to
-`/game-status/`. That's it — there's no AI/Jira-automation logic here; a prior
-Gemini-based triage agent that used to live in this Flask process has been
-removed. Full detail: `service-desk-agent/AGENTS.md`.
+Blueprint at the **root** (`/`) via `importlib` — the dashboard IS the site,
+no `/game-status` prefix or `/dashboard` redirect. There's no AI/Jira-automation
+logic here; a prior Gemini-based triage agent that used to live in this Flask
+process has been removed. Full detail: `service-desk-agent/AGENTS.md`.
 
 ## Configuration (one `.env` + per-component `config.toml`)
 
@@ -102,7 +101,7 @@ removed. Full detail: `service-desk-agent/AGENTS.md`.
 
 ```bash
 # Local (the whole thing):
-cd service-desk-agent/scripts && python main.py    # :8081 → open /dashboard
+cd service-desk-agent/scripts && python main.py    # http://localhost:8081
 
 # Game Status standalone (dev):
 cd game-status-analysis && python server.py        # :5000

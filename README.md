@@ -3,7 +3,7 @@
 A single Jira-tenant (`vvortech.atlassian.net`) analytics suite: one read-only
 **Game Status** dashboard, served by a thin Flask shell on port **8081**.
 
-Open `http://localhost:8081/dashboard` — redirects to `/game-status/`.
+Open `http://localhost:8081` — serves the dashboard directly.
 
 > Architecture & per-project detail: see [`CLAUDE.md`](CLAUDE.md) and each
 > sub-project's own `CLAUDE.md`.
@@ -29,7 +29,7 @@ the board's deps and pre-rendering its data via `build.sh`), and starts the
 container detached. When it finishes:
 
 ```
-Dashboard: http://localhost:8081/dashboard
+Dashboard: http://localhost:8081
 Logs:      docker compose logs -f game-status
 ```
 
@@ -56,7 +56,7 @@ services:
 
 One service, built from the repo's `Dockerfile`, using `network_mode: host` —
 the container binds directly to the host's network, so port `8081` is reachable
-at `http://localhost:8081/dashboard` with no `ports:` mapping needed.
+at `http://localhost:8081` with no `ports:` mapping needed.
 
 > **macOS note:** Docker Desktop on Mac does **not** expose `network_mode: host`
 > to the host machine — `localhost:8081` will refuse to connect even though the
@@ -96,7 +96,7 @@ The `Dockerfile` is board-agnostic — you never edit it. To add a board:
    import config_loader; config_loader.apply(__file__)
    ```
 2. Mount its Blueprint in `service-desk-agent/scripts/main.py` (copy the existing
-   `/game-status` block).
+   Game Status mount block).
 3. Append **one line** to [`build.sh`](build.sh):
    ```bash
    build_board <board-dir> script/<x>_extractor.py scratch/generate_<x>_html.py
@@ -107,7 +107,7 @@ The `Dockerfile` is board-agnostic — you never edit it. To add a board:
 
 ```bash
 # The whole app:
-cd service-desk-agent/scripts && python main.py     # :8081 → /dashboard
+cd service-desk-agent/scripts && python main.py     # http://localhost:8081
 
 # Game Status standalone:
 cd game-status-analysis && python server.py        # :5000

@@ -38,18 +38,18 @@ flagged "wip").
 
 ## Serve & Share
 
-Mounted as a Blueprint inside `../service-desk-agent/scripts/main.py` at
-`/game-status`. The dashboard at `/dashboard` has a "🎮 Game Status" tab.
+Mounted as a Blueprint inside `../service-desk-agent/scripts/main.py` at the
+**root** (`/`) — no `/game-status` prefix.
 
 Standalone (dev): `python server.py` (binds 0.0.0.0:5000; honours `PORT`).
 
-Refresh buttons work both standalone and inside the dashboard iframe:
+Refresh buttons work identically standalone and mounted (same root prefix
+either way):
 - **⚡ Quick Refresh** — incremental (tickets updated since last sync), 60s cooldown
 - **🔄 Full Refresh** — re-fetches all tickets, confirm dialog, 180s cooldown
 
-Cooldowns persist in `localStorage` (keys prefixed `gamestatus_`). The client derives
-the mount prefix from `window.location.pathname` so the same HTML works at `/` and
-`/game-status/`. Endpoints: `POST /api/refresh`, `POST /api/refresh/full`, `GET /api/status`.
+Cooldowns persist in `localStorage` (keys prefixed `gamestatus_`).
+Endpoints: `POST /api/refresh`, `POST /api/refresh/full`, `GET /api/status`.
 
 ## Setup
 
@@ -94,7 +94,7 @@ of the other boards' `report_logic.py`): `SPACES` (incl. `icon`/`subheader`/`sub
 Edge `route` ∈ {`down`, `loop_left`, `wp` (explicit `points`)}; role labels are blank by
 design — only `Reskin` / `Certification Needed` / `Localization needed` carry text.
 
-**Server Blueprint:** `server.py` exports `game_status_bp`. Mounted at `/game-status`
+**Server Blueprint:** `server.py` exports `game_status_bp`. Mounted at the root (`/`)
 by `../service-desk-agent/scripts/main.py` via `importlib`. Incremental anchor stored
 in `result/game_status_last_sync.txt`. Forces this project's `.env` creds into the
 subprocess.
