@@ -41,14 +41,8 @@ if [ ! -f ".env" ]; then
   exit 1
 fi
 
-# Soft warning: Gemini credentials volume.
-if [ ! -d "service-desk-agent/credentials" ]; then
-  echo "⚠ service-desk-agent/credentials/ not found — Gemini/AI features will be"
-  echo "  disabled, but the dashboards will still serve."
-fi
-
 # Soft warning: each board ships a committed config.toml (non-secret).
-for comp in pact_verticals_analysis production-incident-analysis sup-analysis system-maintain-analysis service-desk-agent; do
+for comp in game-status-analysis; do
   if [ ! -f "$comp/config.toml" ]; then
     echo "⚠ Missing $comp/config.toml — that component falls back to built-in defaults."
   fi

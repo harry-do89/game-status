@@ -4,10 +4,6 @@ services:
     container_name: all-in-one
     env_file:
       - "./.env"
-    environment:
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/service-desk-agent/credentials/jira-agent-personal-f0bd8631745a.json
-    volumes:
-      - ./service-desk-agent/credentials:/app/service-desk-agent/credentials:ro
     # Publish the port so it's reachable at http://localhost:8080 on any host
     # (macOS Docker Desktop does not expose `network_mode: host` to the Mac).
     # ports:

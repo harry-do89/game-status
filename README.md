@@ -1,11 +1,10 @@
-# PACT Engineering Suite
+# Game Status Engineering Suite
 
-A single Jira-tenant (`vvortech.atlassian.net`) analytics + automation suite: one
-**AI triage agent** plus **four read-only dashboards** (SUP, Verticals, Production
-Incident, Recurring Issues), all served by one Flask process on port **8080** and
+A single Jira-tenant (`vvortech.atlassian.net`) analytics suite: one read-only
+**Game Status** dashboard, served by a thin Flask shell on port **8080** and
 exposed via an optional Cloudflare tunnel.
 
-Open `http://localhost:8080/dashboard` — a tab bar of the four boards.
+Open `http://localhost:8080/dashboard` — redirects to `/game-status/`.
 
 > Architecture & per-project detail: see [`CLAUDE.md`](CLAUDE.md) and each
 > sub-project's own `CLAUDE.md`.
@@ -14,12 +13,11 @@ Open `http://localhost:8080/dashboard` — a tab bar of the four boards.
 
 - Docker + Docker Compose v2 (`docker compose version`)
 - Credentials & config:
-  - **`.env`** at the repo root — **required**, gitignored. Holds **all secrets**:
-    Jira creds (`JIRA_DOMAIN`/`JIRA_EMAIL`/`JIRA_API_TOKEN`), `AGENT_KEY`, webhook URLs,
-    Google creds path. Copy `.env.example` → `.env` and fill in.
-  - **`<component>/config.toml`** — committed, **non-secret** per-board settings
-    (project key / board list / maintain parents+labels / agent mode). Edit in place.
-  - `service-desk-agent/credentials/<gcp-sa>.json` — optional (Gemini/AI features).
+  - **`.env`** at the repo root — **required**, gitignored. Holds Jira creds
+    (`JIRA_DOMAIN`/`JIRA_EMAIL`/`JIRA_API_TOKEN`). Copy `.env.example` → `.env`
+    and fill in.
+  - **`game-status-analysis/config.toml`** — committed, non-secret per-board
+    settings (project key, etc). Edit in place.
 
 ## Deploy (one command)
 
@@ -28,7 +26,7 @@ Open `http://localhost:8080/dashboard` — a tab bar of the four boards.
 ```
 
 This runs preflight checks, stops any running stack, builds the image (installing
-every board's deps and pre-rendering its data via `build.sh`), and starts the
+the board's deps and pre-rendering its data via `build.sh`), and starts the
 container detached. When it finishes:
 
 ```
@@ -59,8 +57,8 @@ The `Dockerfile` is board-agnostic — you never edit it. To add a board:
    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
    import config_loader; config_loader.apply(__file__)
    ```
-2. Mount its Blueprint and add a dashboard tab in
-   `service-desk-agent/scripts/main.py` (copy an existing block, e.g. `/maintain`).
+2. Mount its Blueprint in `service-desk-agent/scripts/main.py` (copy the existing
+   `/game-status` block).
 3. Append **one line** to [`build.sh`](build.sh):
    ```bash
    build_board <board-dir> script/<x>_extractor.py scratch/generate_<x>_html.py
@@ -73,15 +71,12 @@ The `Dockerfile` is board-agnostic — you never edit it. To add a board:
 # The whole app:
 cd service-desk-agent/scripts && python main.py     # :8080 → /dashboard
 
-# One board standalone:
-cd <board>-analysis && python server.py             # :5000
+# Game Status standalone:
+cd game-status-analysis && python server.py        # :5000
 
-# Regenerate a board's data:
-cd <board>-analysis
-python script/<x>_extractor.py        # → result/<x>_tickets_export.csv
-python scratch/generate_<x>_html.py   # → result/<x>_visual_report.html
+# Regenerate the board's data:
+cd game-status-analysis
+python script/game_status_extractor.py        # → result/game_status_tickets_export.csv
+python scratch/generate_game_status_html.py    # → result/game_status_visual_report.html
 ```
 
-## Tests
-
-Each project has its own suite: `cd <project> && python3 -m pytest`.
