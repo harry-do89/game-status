@@ -23,8 +23,10 @@ OVERVIEW_CSS = """\
   #vt-switch { display: inline-flex; background: #14181f; border: 1px solid #232a34;
                border-radius: 999px; padding: 3px; }
   .vt-btn { border: none; background: transparent; color: #8b95a3; font-family: inherit;
-            font-weight: 600; font-size: 0.8rem; padding: 8px 36px; min-width: 140px;
+            font-weight: 600; font-size: 0.8rem; padding: 8px 28px; min-width: 140px;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
             text-align: center; border-radius: 999px; cursor: pointer; transition: all .15s; }
+  .vt-btn svg { width: 15px; height: 15px; flex-shrink: 0; stroke: currentColor; }
   .vt-btn.active { background: #5b8cff; color: #fff; box-shadow: 0 2px 12px rgba(91,140,255,.4); }
   .vt-btn:not(.active):hover { color: #e7ecf3; }
   #vt-spacer { flex: 1; }
@@ -459,11 +461,11 @@ OVERVIEW_JS = """\
 
   // ── View toggle ─────────────────────────────────────────────────────────────
   function setView(view){
-    const isOv = view === 'overview';
-    document.getElementById('view-overview').style.display = isOv ? '' : 'none';
-    document.getElementById('view-flow').style.display = isOv ? 'none' : '';
+    document.getElementById('view-overview').style.display = view === 'overview' ? '' : 'none';
+    document.getElementById('view-flow').style.display = view === 'flow' ? '' : 'none';
+    document.getElementById('view-glossary').style.display = view === 'glossary' ? '' : 'none';
     document.querySelectorAll('.vt-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
-    document.body.style.background = isOv ? '#0f1115' : '#f1f5f9';
+    document.body.style.background = view === 'overview' ? '#0f1115' : '#f1f5f9';
     try { localStorage.setItem('gamestatus_view', view); } catch(e){}
   }
   document.querySelectorAll('.vt-btn').forEach(b => b.onclick = () => setView(b.dataset.view));

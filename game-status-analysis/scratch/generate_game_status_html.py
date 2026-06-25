@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import graph_layout as G
 from shared import timeline_modal
 from overview_view import OVERVIEW_CSS, OVERVIEW_HTML, OVERVIEW_JS
+from glossary_view import GLOSSARY_HTML
 import overview_logic
 
 # Dynamically load status names from Jira statuses mapping file
@@ -503,6 +504,7 @@ def build_html(node_data):
         .replace("{{OVERVIEW_CSS}}", OVERVIEW_CSS)
         .replace("{{OVERVIEW_HTML}}", OVERVIEW_HTML)
         .replace("{{OVERVIEW_JS}}", OVERVIEW_JS)
+        .replace("{{GLOSSARY_HTML}}", GLOSSARY_HTML)
     )
     # Inject the shared timeline modal last (its braces must not hit other templating).
     return timeline_modal.render_into(page)
@@ -651,8 +653,18 @@ _PAGE = r"""<!DOCTYPE html>
 <body>
 <div id="vt-bar">
   <div id="vt-switch">
-    <button class="vt-btn active" data-view="overview">&#x1F4CA; Overview</button>
-    <button class="vt-btn" data-view="flow">&#x1F500; Flow</button>
+    <button class="vt-btn active" data-view="overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+      Overview
+    </button>
+    <button class="vt-btn" data-view="flow">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><path d="M10 6h4a4 4 0 0 1 4 4v4"/></svg>
+      Flow
+    </button>
+    <button class="vt-btn" data-view="glossary">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h6a3 3 0 0 1 3 3v13a2.5 2.5 0 0 0-2.5-2.5H3z"/><path d="M21 4h-6a3 3 0 0 0-3 3v13a2.5 2.5 0 0 1 2.5-2.5H21z"/></svg>
+      Glossary
+    </button>
   </div>
   <div id="vt-spacer"></div>
   <div id="vt-asof"></div>
@@ -711,6 +723,8 @@ _PAGE = r"""<!DOCTYPE html>
 </div>
 </div>
 <!-- /view-flow -->
+
+{{GLOSSARY_HTML}}
 
 <!-- Refresh -->
 <div id="refresh-overlay">
