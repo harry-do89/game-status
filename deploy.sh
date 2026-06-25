@@ -63,11 +63,11 @@ echo ""
 $COMPOSE ps
 echo ""
 echo "╔══════════════════════════════════════════════╗"
-echo "  Dashboard: http://localhost:8080/dashboard"
-echo "  Logs:      $COMPOSE logs -f all-in-one"
+echo "  Dashboard: http://localhost:8081/dashboard"
+echo "  Logs:      $COMPOSE logs -f game-status"
 echo "╚══════════════════════════════════════════════╝"
 
 if [ "$TAIL_LOGS" -eq 1 ]; then
   echo "→ Tailing logs (Ctrl+C to stop)…"
-  $COMPOSE logs -f all-in-one
+  $COMPOSE logs -f game-status
 fi

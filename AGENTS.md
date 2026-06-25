@@ -13,7 +13,7 @@ Cloudflare tunnel (see `docker-compose.yml`).
 
 ```
                          ┌─────────────────────────────────────────────┐
-                         │  service-desk-agent (Flask, port 8080)        │
+                         │  service-desk-agent (Flask, port 8081)        │
                          │  scripts/main.py = the ONE entrypoint         │
                          │                                               │
                          │  /dashboard        → redirects to             │
@@ -27,7 +27,7 @@ Cloudflare tunnel (see `docker-compose.yml`).
 
 | Folder | Role | Mount | Entry to read its AGENTS.md when… |
 |---|---|---|---|
-| `service-desk-agent/` | Thin Flask shell that mounts and serves the dashboard. | serves `:8080`, `/dashboard` | touching the Flask host or mount logic |
+| `service-desk-agent/` | Thin Flask shell that mounts and serves the dashboard. | serves `:8081`, `/dashboard` | touching the Flask host or mount logic |
 | `game-status-analysis/` | "Game Status" SVG flow graph across 5 spaces (ID/GAME/CER/LOC/RM); node = status w/ live count, click → ticket list | `/game-status` | changing Game Status flow/layout |
 
 ### Game Status timeline note
@@ -102,7 +102,7 @@ removed. Full detail: `service-desk-agent/AGENTS.md`.
 
 ```bash
 # Local (the whole thing):
-cd service-desk-agent/scripts && python main.py    # :8080 → open /dashboard
+cd service-desk-agent/scripts && python main.py    # :8081 → open /dashboard
 
 # Game Status standalone (dev):
 cd game-status-analysis && python server.py        # :5000

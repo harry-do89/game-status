@@ -13,6 +13,6 @@ RUN bash build.sh
 
 WORKDIR /app/service-desk-agent
 
-EXPOSE 8080
+EXPOSE 8081
 
 CMD ["python3", "scripts/main.py"]

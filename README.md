@@ -1,10 +1,9 @@
 # Game Status Engineering Suite
 
 A single Jira-tenant (`vvortech.atlassian.net`) analytics suite: one read-only
-**Game Status** dashboard, served by a thin Flask shell on port **8080** and
-exposed via an optional Cloudflare tunnel.
+**Game Status** dashboard, served by a thin Flask shell on port **8081**.
 
-Open `http://localhost:8080/dashboard` — redirects to `/game-status/`.
+Open `http://localhost:8081/dashboard` — redirects to `/game-status/`.
 
 > Architecture & per-project detail: see [`CLAUDE.md`](CLAUDE.md) and each
 > sub-project's own `CLAUDE.md`.
@@ -19,7 +18,7 @@ Open `http://localhost:8080/dashboard` — redirects to `/game-status/`.
   - **`game-status-analysis/config.toml`** — committed, non-secret per-board
     settings (project key, etc). Edit in place.
 
-## Deploy (one command)
+## Deploy on Docker (one command)
 
 ```bash
 ./deploy.sh
@@ -30,8 +29,8 @@ the board's deps and pre-rendering its data via `build.sh`), and starts the
 container detached. When it finishes:
 
 ```
-Dashboard: http://localhost:8080/dashboard
-Logs:      docker compose logs -f all-in-one
+Dashboard: http://localhost:8081/dashboard
+Logs:      docker compose logs -f game-status
 ```
 
 Flags:
@@ -42,8 +41,47 @@ Flags:
 | `./deploy.sh --no-cache` | force a clean image rebuild |
 | `./deploy.sh --logs` | tail container logs after starting |
 
-To expose it publicly, uncomment the `cloudflared` service in
-`docker-compose.yml` and re-run `./deploy.sh`.
+### What's in `docker-compose.yml`
+
+```yaml
+services:
+  game-status:
+    build: .
+    container_name: game-status
+    env_file:
+      - "./.env"
+    network_mode: host
+    restart: always
+```
+
+One service, built from the repo's `Dockerfile`, using `network_mode: host` —
+the container binds directly to the host's network, so port `8081` is reachable
+at `http://localhost:8081/dashboard` with no `ports:` mapping needed.
+
+> **macOS note:** Docker Desktop on Mac does **not** expose `network_mode: host`
+> to the host machine — `localhost:8081` will refuse to connect even though the
+> container is healthy. This setup targets a **Linux host** (e.g. a VPS). If
+> you're deploying/testing on a Mac, switch to bridge networking instead:
+> ```yaml
+>     ports:
+>       - "8081:8081"
+>     # remove the network_mode: host line
+> ```
+
+### Manual Docker commands (without `deploy.sh`)
+
+```bash
+docker compose build                   # build the image (runs build.sh — installs deps, pre-renders data)
+docker compose up -d                   # start detached
+docker compose logs -f game-status     # tail logs
+docker compose down                    # stop and remove the container
+```
+
+### Exposing it publicly
+
+`docker-compose.yml` only runs the dashboard container itself. To expose it to
+the internet, run your own tunnel/reverse proxy (e.g. a Cloudflare Tunnel)
+pointing at `http://localhost:8081` on the same host.
 
 ## Adding a new board
 
@@ -69,7 +107,7 @@ The `Dockerfile` is board-agnostic — you never edit it. To add a board:
 
 ```bash
 # The whole app:
-cd service-desk-agent/scripts && python main.py     # :8080 → /dashboard
+cd service-desk-agent/scripts && python main.py     # :8081 → /dashboard
 
 # Game Status standalone:
 cd game-status-analysis && python server.py        # :5000

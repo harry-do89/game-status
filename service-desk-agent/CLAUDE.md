@@ -19,7 +19,7 @@ without being asked.
 ```bash
 cd scripts
 source venv/bin/activate
-python main.py         # starts Flask on port 8080 → /dashboard, /game-status/
+python main.py         # starts Flask on port 8081 → /dashboard, /game-status/
 ```
 
 ## Module responsibilities

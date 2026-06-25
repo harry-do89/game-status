@@ -17,7 +17,7 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r scripts/requirements.txt
 cd scripts
-python main.py    # :8080 → /dashboard, /game-status/
+python main.py    # :8081 → /dashboard, /game-status/
 ```
 
 ## Required `.env` variables
