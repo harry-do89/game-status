@@ -1,5 +1,5 @@
 services:
-  all-in-one:
+  game-status:
     build: .
     container_name: game-status
     env_file:
