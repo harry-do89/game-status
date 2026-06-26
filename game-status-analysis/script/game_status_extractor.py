@@ -220,14 +220,17 @@ class JiraClient:
         Each GAME parent's per-team work lives in **child issues** (the Jira "Work"
         panel — issues whose `parent` is the GAME ticket), in separate team projects
         (MT, PF, RNG, BO, DEVOPS, …). For each child whose project-key prefix is a
-        known team (MT→Math, PF→Platform, …) we read its own Start date / Due date:
-          entered = the child's Start date (work begins). No Start date → skipped.
-          exited  = the child's Due date (work ends), or None ⇒ still in progress.
-          eta     = None (Start/Due are the plan; there is no separate ETA).
+        known team (MT→Math, PF→Platform, …) we read three dates so the modal can
+        score late / early / on-time:
+          entered (actual start) = the child's Start date. No Start date → skipped.
+          eta (deadline)         = the child's Due date.
+          exited (actual end)    = the child's resolution date when Done, else
+                                   None ⇒ still in progress.
+        Late = resolved after Due; early = before; on-time = same day.
         Best-effort: a per-parent failure is logged and skipped.
         """
         start_field = self.start_date_field_id()
-        fields = [f for f in ("summary", "duedate", start_field) if f]
+        fields = [f for f in ("summary", "duedate", "resolutiondate", start_field) if f]
         out: dict = {}
         for p in parents:
             pkey = p["key"]
@@ -246,8 +249,9 @@ class JiraClient:
                 start = str((f.get(start_field) if start_field else None) or "")[:10]
                 if not start:
                     continue  # no Start date → treat as having no timeline
-                end = str(f.get("duedate") or "")[:10] or None  # None ⇒ in progress
-                rows.append({"label": label, "entered": start, "exited": end, "eta": None})
+                due = str(f.get("duedate") or "")[:10] or None          # deadline (ETA)
+                end = str(f.get("resolutiondate") or "")[:10] or None   # actual end; None ⇒ in progress
+                rows.append({"label": label, "entered": start, "exited": end, "eta": due})
             if rows:
                 out[pkey] = rows
             time.sleep(0.3)

@@ -107,7 +107,16 @@ This board also exposes a per-ticket timeline route:
 
 It powers the shared modal injected from `../shared/timeline_modal.py`.
 
-### Source of truth for timeline rows
+### CER tickets
+
+CER (Certification) tickets carry the **same per-stage custom fields** as GAME
+(`ETA (Math)` / `Actual Start (Math)` / … through Optimization), so the timeline route
+treats them identically to GAME — the same field-driven `_ticket_timeline_fields` path.
+The shared modal fetches `/api/ticket/<key>/timeline` for both `GAME-` and `CER-` keys;
+all other spaces still fall back to an estimated placeholder. (CER tickets have no
+MT/PF/RNG team children, so they show no Development sub-rows.)
+
+### Source of truth for timeline rows (GAME & CER)
 
 Top-level GAME timeline rows are **field-driven**, not changelog-driven.
 
@@ -136,11 +145,15 @@ come from the extractor cache file `result/game_status_substages.json`.
   `PF`→Platform, …) via the `[substage_teams]` table in `config.toml`; an unlisted
   prefix is skipped (so a GAME parent can have multiple rows for one team, e.g. two
   `RNG` children both → BE).
-- Dates come from the child's own **Start date / Due date** fields (no changelog):
-  - `entered` = the child's **Start date**. **No Start date → the row is omitted.**
-  - `exited` = the child's **Due date**, or `null` ⇒ treated as **in progress**.
-  - `eta` = `null` (Start/Due are the plan; there is no separate ETA).
-  The "Start date" field id is resolved at runtime by display name via `GET /rest/api/3/field`.
+- Each row is built from **three dates** so the modal can score late / early / on-time:
+  - `entered` (actual start) = the child's **Start date**. **No Start date → row omitted.**
+  - `eta` (deadline) = the child's **Due date**.
+  - `exited` (actual end) = the child's **resolution date** when Done, else `null` ⇒
+    **in progress**.
+  - Delta = `exited` vs `eta`: resolved **after** Due → overrun/late (orange);
+    **before** → time saved/early (green); same day → on-time (`±0d`).
+  The "Start date" field id is resolved at runtime by display name via `GET /rest/api/3/field`;
+  Due date is the built-in `duedate`; actual end is `resolutiondate`.
 - The timeline route merges those cached rows under the top-level `Development` row.
 
 ### Important implementation note

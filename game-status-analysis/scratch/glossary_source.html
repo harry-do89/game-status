@@ -6,15 +6,15 @@
 <title>Pact × Studios — Production Workflow</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#EBEEF3; --surface:#FFFFFF; --surface-2:#F6F7FA;
-  --ink:#15171C; --muted:#5C6270; --faint:#878D9B; --line:#DCE0E8;
+  --bg:#EBEEF3; --surface:#FFFFFF; --surface-2:#F5F6FA; --surface-3:#EEF0F6;
+  --ink:#14161B; --muted:#565C69; --faint:#838997; --line:#DBDFE7;
   --accent:#3D3AE0; --accent-soft:#ECEBFF;
   --studio:#B4530E; --studio-soft:#FBEEE2;
   --pact:#3D3AE0; --pact-soft:#ECEBFF;
-  --decline:#C02626; --exit:#0E7C66;
+  --decline:#C02626; --exit:#0E7C66; --exit-soft:#E3F4EF;
   --code-bg:#F0EFFB; --code-ink:#3833B5;
   --radius:12px; --radius-sm:8px;
   --shadow:0 1px 2px rgba(16,20,30,.05),0 8px 28px rgba(16,20,30,.07);
@@ -22,12 +22,12 @@
 }
 @media (prefers-color-scheme:dark){
   :root{
-    --bg:#101218; --surface:#181B22; --surface-2:#1F232C;
-    --ink:#ECEEF2; --muted:#9AA0AD; --faint:#6E7480; --line:#2B2F3A;
+    --bg:#0F1117; --surface:#171A21; --surface-2:#1E222B; --surface-3:#252A34;
+    --ink:#ECEEF2; --muted:#A2A8B4; --faint:#727884; --line:#2B2F3A;
     --accent:#8C89FF; --accent-soft:#23233A;
     --studio:#E8915A; --studio-soft:#2E2118;
     --pact:#8C89FF; --pact-soft:#23233A;
-    --decline:#F08585; --exit:#5DCBAC;
+    --decline:#F08585; --exit:#5DCBAC; --exit-soft:#16271F;
     --code-bg:#23233A; --code-ink:#B7B4FF;
     --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.4);
     --lane-idea:rgba(232,145,90,.07); --lane-game:rgba(140,137,255,.07);
@@ -57,8 +57,8 @@ h1{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:32px;line-he
 .rchip:hover{border-color:var(--accent)}
 .rchip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
 .role-desc{margin-top:12px;font-size:13.5px;color:var(--muted);line-height:1.55;border-top:1px solid var(--line);padding-top:12px}
-.role-desc b{color:var(--ink);font-weight:500}
-.role-desc .acts{display:block;margin-top:5px;font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--faint)}
+.role-desc b{color:var(--ink);font-weight:600}
+.role-desc .acts{display:block;margin-top:6px;font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--faint)}
 
 .bar{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-bottom:14px}
 .legend{display:flex;gap:16px;font-size:12.5px;color:var(--muted);align-items:center;flex-wrap:wrap}
@@ -99,59 +99,75 @@ svg.links{position:absolute;inset:0;width:880px;height:870px;z-index:1;pointer-e
 
 .scrim{position:fixed;inset:0;background:rgba(10,12,18,.42);opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s;z-index:80}
 .scrim.open{opacity:1;visibility:visible}
-.drawer{position:fixed;top:0;right:0;height:100%;width:500px;max-width:94vw;background:var(--surface);border-left:1px solid var(--line);
+.drawer{position:fixed;top:0;right:0;height:100%;width:520px;max-width:96vw;background:var(--surface);border-left:1px solid var(--line);
   transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);z-index:90;display:flex;flex-direction:column;box-shadow:-12px 0 40px rgba(0,0,0,.18)}
 .drawer.open{transform:translateX(0)}
 @media (prefers-reduced-motion:reduce){.drawer{transition:none}.scrim{transition:none}}
-.dh{padding:22px 24px 16px;border-bottom:1px solid var(--line);position:relative;flex:0 0 auto}
+.dh{padding:22px 24px 18px;border-bottom:1px solid var(--line);position:relative;flex:0 0 auto;background:var(--surface-2)}
 .dh .x{position:absolute;top:16px;right:16px;appearance:none;border:0;background:transparent;font-size:24px;line-height:1;color:var(--muted);cursor:pointer;padding:4px 8px}
 .tag{display:inline-flex;align-items:center;gap:6px;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.07em;text-transform:uppercase;padding:4px 9px;border-radius:999px;font-weight:500}
 .tag.idea{background:var(--studio-soft);color:var(--studio)}
 .tag.game{background:var(--pact-soft);color:var(--pact)}
-.dh h2{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:23px;margin:12px 0 6px;letter-spacing:-.01em}
-.dh .purpose{margin:0;color:var(--muted);font-size:14px}
-.db{padding:4px 24px 30px;overflow-y:auto}
-.section{padding:17px 0;border-bottom:1px solid var(--line)}
+.dh h2{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:24px;margin:12px 0 7px;letter-spacing:-.01em}
+.dh .purpose{margin:0;color:var(--muted);font-size:14px;line-height:1.5}
+.db{padding:0 24px 30px;overflow-y:auto}
+.section{padding:18px 0;border-bottom:1px solid var(--line)}
 .section:last-child{border-bottom:0}
-.section h3{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin:0 0 12px;font-weight:500}
-.gate{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:15px 16px}
-.gate-row{display:flex;flex-wrap:wrap;gap:18px}
-.gate-col{flex:1;min-width:120px}
-.gate-col .lbl{font-size:12px;color:var(--faint);margin-bottom:7px}
-.gate-col .mini{font-size:11.5px;color:var(--faint);margin-top:6px}
-.gate-note{margin:13px 0 0;font-size:13px;color:var(--muted);border-top:1px dashed var(--line);padding-top:11px}
-.dod,.child{display:grid;gap:9px 14px;align-items:baseline}
-.dod{grid-template-columns:max-content minmax(0,1fr) max-content}
-.child{grid-template-columns:max-content minmax(0,1fr) max-content max-content}
-.dod .h,.child .h{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);padding-bottom:6px;border-bottom:1px solid var(--line)}
-.dod .d-nm{font-weight:500;font-size:13.5px}
-.dod .d-ds{color:var(--muted);font-size:13px}
-.dod .d-tpl{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--faint);border:1px dashed var(--line);border-radius:5px;padding:1px 7px;white-space:nowrap}
-.child .c-vs{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);white-space:nowrap}
-.child .c-sum{font-size:13.5px;color:var(--ink)}
-.child .c-st{font-size:11px;color:var(--faint);font-family:"IBM Plex Mono",monospace}
-.who{display:grid;grid-template-columns:max-content minmax(0,1fr) max-content;gap:10px 14px;align-items:baseline}
-.who-h{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);padding-bottom:6px;border-bottom:1px solid var(--line)}
-.who .what{color:var(--ink);font-size:13.5px}
-.who .src{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);white-space:nowrap}
+.section h3{display:flex;align-items:center;gap:9px;font-family:"Space Grotesk",sans-serif;font-size:13.5px;font-weight:600;color:var(--ink);margin:0 0 13px}
+.section h3::before{content:"";width:4px;height:15px;border-radius:2px;background:var(--accent)}
+.section h3 .cnt{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:500;color:var(--faint);margin-left:auto}
+.s-doe h3::before{background:var(--studio)} .s-who h3::before{background:var(--accent)} .s-dod h3::before{background:var(--exit)}
+.s-child h3::before{background:var(--pact)} .s-tier h3::before{background:var(--decline)} .s-next h3::before{background:var(--faint)}
+
+.gate{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:6px 4px}
+.gate-row{display:flex;flex-wrap:wrap}
+.gate-col{flex:1;min-width:130px;padding:10px 13px}
+.gate-col+.gate-col{border-left:1px solid var(--line)}
+.gate-col .lbl{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.gate-col .mini{font-size:11.5px;color:var(--faint);margin-top:8px;line-height:1.4}
+.gate-note{display:flex;gap:8px;margin:11px 4px 4px;font-size:13px;color:var(--ink);background:var(--accent-soft);border-radius:var(--radius-sm);padding:10px 12px;line-height:1.45}
+.gate-note::before{content:"ⓘ";color:var(--accent);font-weight:700}
+
+.items{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;gap:12px;align-items:flex-start;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px 13px}
+.item.doe{border-left:3px solid var(--studio)} .item.dod{border-left:3px solid var(--exit)}
+.item .ic{flex:1;min-width:0}
+.item .ic-name{display:block;font-weight:600;font-size:13.5px;color:var(--ink)}
+.item .ic-desc{display:block;color:var(--muted);font-size:12.5px;margin-top:3px;line-height:1.45}
+.item .ic-tpl{flex:0 0 auto;align-self:center;font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--faint);border:1px dashed var(--line);border-radius:5px;padding:3px 8px;white-space:nowrap;cursor:default}
+
+.wholist{display:flex;flex-direction:column;gap:8px}
+.whorow{display:grid;grid-template-columns:118px 1fr;gap:11px;align-items:start;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px 13px}
+.whorow .wr-what{font-size:13.5px;color:var(--ink);line-height:1.45}
+.whorow .wr-src{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--faint);margin-top:4px}
+
+.cttable{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden}
+.cttable th{background:var(--surface-3);font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);font-weight:500}
+.cttable td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.cttable tr:last-child td{border-bottom:0}
+.ct-vs{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--muted);white-space:nowrap}
+.ct-sum{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink)}
+.st-pill{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--muted);background:var(--surface-3);border:1px solid var(--line);border-radius:5px;padding:1px 7px;white-space:nowrap}
+
 .next{display:grid;gap:9px}
-.next-item{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 13px}
-.next-arrow{color:var(--accent);font-size:15px;font-family:"IBM Plex Mono",monospace}
-.next-to{font-weight:500;font-size:14px}
+.next-item{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px 13px}
+.next-item.back{border-left:3px solid var(--decline)} .next-item.fwd{border-left:3px solid var(--exit)}
+.next-arrow{color:var(--ink);font-size:15px;font-family:"IBM Plex Mono",monospace}
+.next-to{font-weight:600;font-size:14px}
 .next-to.go{cursor:pointer;border-bottom:1px dotted var(--faint)}
 .next-to.go:hover{color:var(--accent)}
 .next-cond{font-size:12px;color:var(--muted)}
 .next-by{margin-left:auto;display:flex;gap:6px;align-items:center}
 .next-by .pl{font-size:10.5px;color:var(--faint);font-family:"IBM Plex Mono",monospace}
-.tier{margin-top:13px;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden}
+.tier{border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden}
 .tier table{width:100%;border-collapse:collapse;font-size:13.5px}
 .tier td{padding:8px 14px;border-bottom:1px solid var(--line)}
 .tier tr:last-child td{border-bottom:0}
 .tier td:first-child{font-weight:500}
 .tier td:last-child{font-family:"IBM Plex Mono",monospace;text-align:right;color:var(--muted)}
 .tier tr.extreme td:last-child{color:var(--decline)}
-.tier-cap{font-size:12.5px;color:var(--muted);margin:9px 2px 0}
-.role{font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:12.5px;background:var(--code-bg);color:var(--code-ink);padding:2px 8px;border-radius:6px;cursor:pointer;white-space:nowrap;border:1px solid transparent}
+.tier-cap{font-size:12.5px;color:var(--muted);margin:10px 2px 0;line-height:1.45}
+.role{font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:12.5px;background:var(--code-bg);color:var(--code-ink);padding:3px 9px;border-radius:6px;cursor:pointer;white-space:nowrap;border:1px solid transparent}
 .role:hover,.role:focus{border-color:var(--accent);outline:none}
 .role.signoff{background:var(--accent);color:#fff}
 .role.auto{background:transparent;border:1px dashed var(--faint);color:var(--muted);cursor:default}
@@ -159,15 +175,34 @@ svg.links{position:absolute;inset:0;width:880px;height:870px;z-index:1;pointer-e
 
 .epic-wrap{margin-top:34px}
 .epic-wrap>h2{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:22px;margin:0 0 6px;letter-spacing:-.01em}
-.epic-wrap>.sub{color:var(--muted);margin:0 0 18px;max-width:64ch}
+.epic-wrap>.sub{color:var(--muted);margin:0 0 18px;max-width:70ch}
 .epic-banner{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow)}
 .epic-banner p{margin:0;color:var(--muted);font-size:14px}
 .epic-banner p b{color:var(--ink);font-weight:500}
 .meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .meta .m{font-family:"IBM Plex Mono",monospace;font-size:12px;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:3px 9px;color:var(--muted)}
-.epic-diagram{margin-top:16px;overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);padding:8px 0}
-.epic-diagram svg{width:760px;height:auto;display:block;margin:0 auto}
-.epic-close{margin:14px 0 0;color:var(--muted);font-size:13.5px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:13px 16px}
+
+.epic-diagram{margin-top:16px;overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);padding:10px 0}
+.epic-diagram svg{width:1000px;height:auto;display:block;margin:0 auto}
+.tree{margin-top:16px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);padding:18px 22px}
+.t-epic{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:16px;color:var(--ink)}
+.t-epic .e-badge{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:500;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent);border-radius:6px;padding:2px 9px}
+.t-epic .e-note{font-family:"Inter",sans-serif;font-weight:400;font-size:12px;color:var(--faint)}
+.t-level{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin:14px 0 2px 4px}
+.t-stories{margin-left:8px;border-left:1.5px solid var(--line)}
+.t-story{position:relative;padding:10px 0 10px 24px}
+.t-story+.t-story{border-top:1px dashed var(--line)}
+.t-story::before{content:"";position:absolute;left:0;top:23px;width:18px;height:1.5px;background:var(--line)}
+.t-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.t-tag{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;background:var(--code-bg);color:var(--code-ink);border-radius:5px;padding:2px 8px;white-space:nowrap}
+.t-sum{font-size:13.5px;color:var(--ink);font-weight:500}
+.t-board{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--faint)}
+.t-tasks{margin:9px 0 1px 10px;border-left:1.5px dashed var(--line);padding-left:16px;display:flex;flex-direction:column;gap:6px}
+.t-task{position:relative;font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--muted)}
+.t-task .k{color:var(--accent);font-weight:500}
+.t-task.sub{margin-left:16px;color:var(--faint)}
+.t-more{margin-top:7px;font-size:11.5px;color:var(--faint);font-style:italic}
+.epic-close{margin:14px 0 0;color:var(--muted);font-size:13.5px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:13px 16px;line-height:1.5}
 footer{margin-top:24px;font-size:12.5px;color:var(--faint);text-align:center}
 @media (max-width:860px){.principles{grid-template-columns:repeat(2,1fr)}h1{font-size:26px}}
 </style>
@@ -176,19 +211,19 @@ footer{margin-top:24px;font-size:12.5px;color:var(--faint);text-align:center}
 <div class="wrap">
   <p class="eyebrow">Pact × Studios · Production pipeline</p>
   <h1>Production workflow</h1>
-  <p class="lede">A <b>pull system</b> across two boards. Each team pulls work in when it has capacity — nobody pushes downstream. Every stage shows its owner; tap a role to highlight where it acts; click any stage for its detail.</p>
+  <p class="lede">A <b>pull system</b> across two boards. Each team pulls work in when it has capacity — nobody pushes downstream. Every stage shows its owner; tap a role to highlight where it acts; click any stage for its full detail.</p>
 
   <section class="principles" aria-label="Operating DNA">
     <div class="principle"><span class="n">01</span><h4>Pull, not push</h4><p>When a stage's team has free capacity, it pulls in games from the previous stage whose Definition of Done is met and that satisfy this stage's Definition of Entry. Nobody pushes work forward.</p></div>
     <div class="principle"><span class="n">02</span><h4>PM watches the whole Game board</h4><p>The PM is a watcher on every Game-board stage, and the assignee on the coordination-heavy ones — To Do, Contract Alignment, Development, Integration QC, Packaging.</p></div>
-    <div class="principle"><span class="n">03</span><h4>WIP & time</h4><p>Every stage has a WIP limit (n) and must track ETA + actual start/end.</p></div>
-    <div class="principle"><span class="n">04</span><h4>One epic per game</h4><p>A game = one epic. Child tickets link to it on the Verticals/Studios boards. Closed when dev is done + all tickets, docs and time are in.</p></div>
+    <div class="principle"><span class="n">03</span><h4>DoR vs DoD</h4><p>DoR = "can we start without redoing it?" (input, clarity, readiness). DoD = "is it done & safe to ship?" (output, quality, testing). If it can only be checked after the work, it's DoD.</p></div>
+    <div class="principle"><span class="n">04</span><h4>One epic per game</h4><p>A game = one epic. The epic holds the docs and links the stories; the actual work lives in tasks/subtasks inside each story. Closed when dev is done + all linked.</p></div>
   </section>
 
   <section class="rolesbar" aria-label="Role filter">
     <div class="roles-head">Roles — tap to filter the map <button id="clearRole" hidden>Show all</button></div>
     <div id="rolesGrid"></div>
-    <div class="role-desc" id="roleDesc">Tap a role to expand its description and highlight the stages where it acts.</div>
+    <div class="role-desc" id="roleDesc">Tap a role to read what it does and highlight the stages where it acts.</div>
   </section>
 
   <div class="bar">
@@ -211,35 +246,18 @@ footer{margin-top:24px;font-size:12.5px;color:var(--faint);text-align:center}
   </div>
 
   <section class="epic-wrap">
-    <h2>Epic structure — how a game's Jira issues link up</h2>
-    <p class="sub">A game is tracked as one epic. Each team builds its part as a child ticket on its own board, and links that ticket back to the game epic.</p>
+    <h2>How the work is structured — Epic › Story › Task</h2>
+    <p class="sub">A game is one epic. The epic only holds the source-of-truth docs and links the stories — never the work itself. The work lives in <b>stories</b> (one per vertical / board, each titled with a <b>[TAG]</b> prefix) and, inside each story, in <b>tasks & subtasks</b>.</p>
     <div class="epic-banner">
-      <p>The epic <b>is</b> the game. Its assignee changes per stage to whoever owns it (the PM on coordination stages); the epic holds the source-of-truth documents.</p>
+      <p>Keep the epic clean. Its assignee changes per stage to whoever owns it (the PM on coordination stages); it carries the documents, while every vertical's story carries that team's real tasks.</p>
       <div class="meta"><span class="m">One Pager (DNA)</span><span class="m">Final GDD</span><span class="m">Final Math Model</span><span class="m">Docs &amp; timing</span></div>
     </div>
-    <div class="epic-diagram">
-      <svg viewBox="0 0 760 430" role="img" aria-label="A central game epic with each board's child ticket linking into it">
-        <defs><marker id="ep" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
-        <g stroke="var(--faint)" stroke-width="1.3" stroke-dasharray="5 4" fill="none">
-          <path d="M210 90 L284 196" marker-end="url(#ep)"/><path d="M210 220 L284 220" marker-end="url(#ep)"/><path d="M210 350 L284 244" marker-end="url(#ep)"/>
-          <path d="M550 68 L476 194" marker-end="url(#ep)"/><path d="M550 168 L476 212" marker-end="url(#ep)"/><path d="M550 268 L476 228" marker-end="url(#ep)"/><path d="M550 368 L476 246" marker-end="url(#ep)"/>
-        </g>
-        <g font-family="'IBM Plex Mono',monospace">
-          <rect x="40" y="62" width="170" height="56" rx="8" fill="var(--surface)" stroke="var(--pact)" stroke-width="1"/><text x="125" y="86" text-anchor="middle" dominant-baseline="central" font-size="12.5" font-weight="500" fill="var(--ink)">RNG vertical</text><text x="125" y="104" text-anchor="middle" dominant-baseline="central" font-size="11" fill="var(--muted)">BE — game engine</text>
-          <rect x="40" y="192" width="170" height="56" rx="8" fill="var(--surface)" stroke="var(--pact)" stroke-width="1"/><text x="125" y="216" text-anchor="middle" dominant-baseline="central" font-size="12.5" font-weight="500" fill="var(--ink)">BO vertical</text><text x="125" y="234" text-anchor="middle" dominant-baseline="central" font-size="11" fill="var(--muted)">BO — history tool</text>
-          <rect x="40" y="322" width="170" height="56" rx="8" fill="var(--surface)" stroke="var(--pact)" stroke-width="1"/><text x="125" y="346" text-anchor="middle" dominant-baseline="central" font-size="12.5" font-weight="500" fill="var(--ink)">Platform vertical</text><text x="125" y="364" text-anchor="middle" dominant-baseline="central" font-size="11" fill="var(--muted)">wallet &amp; money</text>
-          <rect x="550" y="40" width="170" height="56" rx="8" fill="var(--surface)" stroke="var(--studio)" stroke-width="1"/><text x="635" y="64" text-anchor="middle" dominant-baseline="central" font-size="12.5" font-weight="500" fill="var(--ink)">Studio board</text><text x="635" y="82" text-anchor="middle" dominant-baseline="central" font-size="11" fill="var(--muted)">FE UI · QC tests · art</text>
-          <rect x="550" y="140" width="170" height="56" rx="8" fill="var(--surface)" stroke="var(--pact)" stroke-width="1"/><text x="635" y="164" text-anchor="middle" dominant-baseline="central" font-size="12.5" font-weight="500" fill="var(--ink)">DevOps vertical</text><text x="635" y="182" text-anchor="middle" dominant-baseline="central" font-size="11" fill="var(--muted)">CICD build</text>
-          <rect x="550" y="240" width="170" height="56" rx="8" fill="var(--surface)" stroke="var(--pact)" stroke-width="1"/><text x="635" y="264" text-anchor="middle" dominant-baseline="central" font-size="12.5" font-weight="500" fill="var(--ink)">Math vertical</text><text x="635" y="282" text-anchor="middle" dominant-baseline="central" font-size="11" fill="var(--muted)">RTP + simulation</text>
-          <rect x="550" y="340" width="170" height="56" rx="8" fill="var(--surface)" stroke="var(--decline)" stroke-width="1"/><text x="635" y="364" text-anchor="middle" dominant-baseline="central" font-size="12.5" font-weight="500" fill="var(--ink)">Bugs board</text><text x="635" y="382" text-anchor="middle" dominant-baseline="central" font-size="11" fill="var(--muted)">Bug story → child bugs</text>
-          <rect x="290" y="184" width="180" height="72" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><text x="380" y="214" text-anchor="middle" dominant-baseline="central" font-family="'Space Grotesk',sans-serif" font-size="15" font-weight="600" fill="var(--ink)">Game = Epic</text><text x="380" y="235" text-anchor="middle" dominant-baseline="central" font-size="11" fill="var(--muted)">holds the docs</text>
-        </g>
-      </svg>
-    </div>
-    <p class="epic-close">Each child ticket is created on its own board and linked to the game epic. The epic closes only when development is done and every ticket, document and timestamp is linked — so the finished game stands as a complete record (storage).</p>
+
+    <div class="epic-diagram"><svg viewBox="0 0 1000 600" role="img" aria-label="Game epic in the centre, verticals and boards on both sides, each story split into two child tasks"><defs><marker id="ed" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><g font-family="'IBM Plex Mono',monospace" font-size="10" fill="var(--faint)" letter-spacing="1"><text x="112" y="26" text-anchor="middle">TASKS / SUBTASKS</text><text x="500" y="26" text-anchor="middle">GAME = EPIC</text><text x="888" y="26" text-anchor="middle">TASKS / SUBTASKS</text><text x="316" y="44" text-anchor="middle" fill="var(--muted)">stories · per vertical/board</text><text x="684" y="44" text-anchor="middle" fill="var(--muted)">stories · per vertical/board</text></g><g stroke="var(--faint)" stroke-width="1.2" stroke-dasharray="5 4" fill="none"><path d="M404 74.0 C 444 74.0, 390 300.0, 410 300.0" marker-end="url(#ed)"/><path d="M404 188.0 C 444 188.0, 390 300.0, 410 300.0" marker-end="url(#ed)"/><path d="M404 302.0 C 444 302.0, 390 300.0, 410 300.0" marker-end="url(#ed)"/><path d="M404 416.0 C 444 416.0, 390 300.0, 410 300.0" marker-end="url(#ed)"/><path d="M404 530.0 C 444 530.0, 390 300.0, 410 300.0" marker-end="url(#ed)"/><path d="M596 120.0 C 556 120.0, 610 300.0, 590 300.0" marker-end="url(#ed)"/><path d="M596 242.0 C 556 242.0, 610 300.0, 590 300.0" marker-end="url(#ed)"/><path d="M596 364.0 C 556 364.0, 610 300.0, 590 300.0" marker-end="url(#ed)"/><path d="M596 486.0 C 556 486.0, 610 300.0, 590 300.0" marker-end="url(#ed)"/></g><g stroke="var(--accent)" stroke-width="1.1" stroke-dasharray="4 4" fill="none"><path d="M210 59.0 C 220 59.0, 218 74.0, 228 74.0" marker-end="url(#ed)"/><path d="M210 89.0 C 220 89.0, 218 74.0, 228 74.0" marker-end="url(#ed)"/><path d="M210 173.0 C 220 173.0, 218 188.0, 228 188.0" marker-end="url(#ed)"/><path d="M210 203.0 C 220 203.0, 218 188.0, 228 188.0" marker-end="url(#ed)"/><path d="M210 287.0 C 220 287.0, 218 302.0, 228 302.0" marker-end="url(#ed)"/><path d="M210 317.0 C 220 317.0, 218 302.0, 228 302.0" marker-end="url(#ed)"/><path d="M210 401.0 C 220 401.0, 218 416.0, 228 416.0" marker-end="url(#ed)"/><path d="M210 431.0 C 220 431.0, 218 416.0, 228 416.0" marker-end="url(#ed)"/><path d="M210 515.0 C 220 515.0, 218 530.0, 228 530.0" marker-end="url(#ed)"/><path d="M210 545.0 C 220 545.0, 218 530.0, 228 530.0" marker-end="url(#ed)"/><path d="M790 105.0 C 780 105.0, 782 120.0, 772 120.0" marker-end="url(#ed)"/><path d="M790 135.0 C 780 135.0, 782 120.0, 772 120.0" marker-end="url(#ed)"/><path d="M790 227.0 C 780 227.0, 782 242.0, 772 242.0" marker-end="url(#ed)"/><path d="M790 257.0 C 780 257.0, 782 242.0, 772 242.0" marker-end="url(#ed)"/><path d="M790 349.0 C 780 349.0, 782 364.0, 772 364.0" marker-end="url(#ed)"/><path d="M790 379.0 C 780 379.0, 782 364.0, 772 364.0" marker-end="url(#ed)"/><path d="M790 471.0 C 780 471.0, 782 486.0, 772 486.0" marker-end="url(#ed)"/><path d="M790 501.0 C 780 501.0, 782 486.0, 772 486.0" marker-end="url(#ed)"/></g><g font-family="'IBM Plex Mono',monospace"><rect x="14" y="47.0" width="196" height="24" rx="6" fill="var(--surface-2)" stroke="var(--accent)" stroke-width="1"/><text x="24" y="59.0" dominant-baseline="central" font-size="9.5" fill="var(--ink)">spin / round API</text><rect x="14" y="77.0" width="196" height="24" rx="6" fill="var(--surface-2)" stroke="var(--accent)" stroke-width="1"/><text x="24" y="89.0" dominant-baseline="central" font-size="9.5" fill="var(--ink)">RNG + seed / audit</text><rect x="14" y="161.0" width="196" height="24" rx="6" fill="var(--surface-2)" stroke="var(--accent)" stroke-width="1"/><text x="24" y="173.0" dominant-baseline="central" font-size="9.5" fill="var(--ink)">bet / win / refund</text><rect x="14" y="191.0" width="196" height="24" rx="6" fill="var(--surface-2)" stroke="var(--accent)" stroke-width="1"/><text x="24" y="203.0" dominant-baseline="central" font-size="9.5" fill="var(--ink)">Auth + token lifecycle</text><rect x="14" y="275.0" width="196" height="24" rx="6" fill="var(--surface-2)" stroke="var(--accent)" stroke-width="1"/><text x="24" y="287.0" dominant-baseline="central" font-size="9.5" fill="var(--ink)">config schema + validation</text><rect x="14" y="305.0" width="196" height="24" rx="6" fill="var(--surface-2)" stroke="var(--accent)" stroke-width="1"/><text x="24" y="317.0" dominant-baseline="central" font-size="9.5" fill="var(--ink)">RBAC + audit trail</text><rect x="14" y="389.0" width="196" height="24" rx="6" fill="var(--surface-2)" stroke="var(--accent)" stroke-width="1"/><text x="24" y="401.0" dominant-baseline="central" font-size="9.5" fill="var(--ink)">event schema + KPIs</text><rect x="14" y="419.0" width="196" height="24" rx="6" fill="var(--surface-2)" stroke="var(--accent)" stroke-width="1"/><text x="24" y="431.0" dominant-baseline="central" font-size="9.5" fill="var(--ink)">regulator reports</text><rect x="14" y="503.0" width="196" height="24" rx="6" fill="var(--surface-2)" stroke="var(--accent)" stroke-width="1"/><text x="24" y="515.0" dominant-baseline="central" font-size="9.5" fill="var(--ink)">RTP pairing</text><rect x="14" y="533.0" width="196" height="24" rx="6" fill="var(--surface-2)" stroke="var(--accent)" stroke-width="1"/><text x="24" y="545.0" dominant-baseline="central" font-size="9.5" fill="var(--ink)">simulation over N rounds</text><rect x="790" y="93.0" width="196" height="24" rx="6" fill="var(--surface-2)" stroke="var(--accent)" stroke-width="1"/><text x="800" y="105.0" dominant-baseline="central" font-size="9.5" fill="var(--ink)">game UI build</text><rect x="790" y="123.0" width="196" height="24" rx="6" fill="var(--surface-2)" stroke="var(--accent)" stroke-width="1"/><text x="800" y="135.0" dominant-baseline="central" font-size="9.5" fill="var(--ink)">integrate spin API</text><rect x="790" y="215.0" width="196" height="24" rx="6" fill="var(--surface-2)" stroke="var(--accent)" stroke-width="1"/><text x="800" y="227.0" dominant-baseline="central" font-size="9.5" fill="var(--ink)">write test cases</text><rect x="790" y="245.0" width="196" height="24" rx="6" fill="var(--surface-2)" stroke="var(--accent)" stroke-width="1"/><text x="800" y="257.0" dominant-baseline="central" font-size="9.5" fill="var(--ink)">end-to-end run</text><rect x="790" y="337.0" width="196" height="24" rx="6" fill="var(--surface-2)" stroke="var(--accent)" stroke-width="1"/><text x="800" y="349.0" dominant-baseline="central" font-size="9.5" fill="var(--ink)">CI/CD pipeline</text><rect x="790" y="367.0" width="196" height="24" rx="6" fill="var(--surface-2)" stroke="var(--accent)" stroke-width="1"/><text x="800" y="379.0" dominant-baseline="central" font-size="9.5" fill="var(--ink)">env parity + rollback</text><rect x="790" y="459.0" width="196" height="24" rx="6" fill="var(--surface-2)" stroke="var(--accent)" stroke-width="1"/><text x="800" y="471.0" dominant-baseline="central" font-size="9.5" fill="var(--ink)">bug story</text><rect x="790" y="489.0" width="196" height="24" rx="6" fill="var(--surface-2)" stroke="var(--accent)" stroke-width="1"/><text x="800" y="501.0" dominant-baseline="central" font-size="9.5" fill="var(--ink)">child bugs (subtask)</text></g><g font-family="'IBM Plex Mono',monospace"><rect x="228" y="52.0" width="176" height="44" rx="8" fill="var(--surface)" stroke="var(--pact)" stroke-width="1.3"/><text x="240" y="67.0" dominant-baseline="central" font-size="11.5" font-weight="500" fill="var(--ink)">[GE] Game engine</text><text x="240" y="85.0" dominant-baseline="central" font-size="9.5" fill="var(--muted)">RNG vertical</text><rect x="228" y="166.0" width="176" height="44" rx="8" fill="var(--surface)" stroke="var(--pact)" stroke-width="1.3"/><text x="240" y="181.0" dominant-baseline="central" font-size="11.5" font-weight="500" fill="var(--ink)">[Platform] Wallet …</text><text x="240" y="199.0" dominant-baseline="central" font-size="9.5" fill="var(--muted)">Platform vertical</text><rect x="228" y="280.0" width="176" height="44" rx="8" fill="var(--surface)" stroke="var(--pact)" stroke-width="1.3"/><text x="240" y="295.0" dominant-baseline="central" font-size="11.5" font-weight="500" fill="var(--ink)">[BO] Config & tools</text><text x="240" y="313.0" dominant-baseline="central" font-size="9.5" fill="var(--muted)">BO vertical</text><rect x="228" y="394.0" width="176" height="44" rx="8" fill="var(--surface)" stroke="var(--pact)" stroke-width="1.3"/><text x="240" y="409.0" dominant-baseline="central" font-size="11.5" font-weight="500" fill="var(--ink)">[Data] Reports / KPIs</text><text x="240" y="427.0" dominant-baseline="central" font-size="9.5" fill="var(--muted)">Data vertical</text><rect x="228" y="508.0" width="176" height="44" rx="8" fill="var(--surface)" stroke="var(--pact)" stroke-width="1.3"/><text x="240" y="523.0" dominant-baseline="central" font-size="11.5" font-weight="500" fill="var(--ink)">[Math] Math model</text><text x="240" y="541.0" dominant-baseline="central" font-size="9.5" fill="var(--muted)">Math vertical</text><rect x="596" y="98.0" width="176" height="44" rx="8" fill="var(--surface)" stroke="var(--studio)" stroke-width="1.3"/><text x="608" y="113.0" dominant-baseline="central" font-size="11.5" font-weight="500" fill="var(--ink)">[FE] Game UI</text><text x="608" y="131.0" dominant-baseline="central" font-size="9.5" fill="var(--muted)">Studio board</text><rect x="596" y="220.0" width="176" height="44" rx="8" fill="var(--surface)" stroke="var(--studio)" stroke-width="1.3"/><text x="608" y="235.0" dominant-baseline="central" font-size="11.5" font-weight="500" fill="var(--ink)">[QC] Tests</text><text x="608" y="253.0" dominant-baseline="central" font-size="9.5" fill="var(--muted)">Studio board</text><rect x="596" y="342.0" width="176" height="44" rx="8" fill="var(--surface)" stroke="var(--pact)" stroke-width="1.3"/><text x="608" y="357.0" dominant-baseline="central" font-size="11.5" font-weight="500" fill="var(--ink)">[DevOps] CI/CD</text><text x="608" y="375.0" dominant-baseline="central" font-size="9.5" fill="var(--muted)">DevOps vertical</text><rect x="596" y="464.0" width="176" height="44" rx="8" fill="var(--surface)" stroke="var(--decline)" stroke-width="1.3"/><text x="608" y="479.0" dominant-baseline="central" font-size="11.5" font-weight="500" fill="var(--ink)">[Bug] Bugs</text><text x="608" y="497.0" dominant-baseline="central" font-size="9.5" fill="var(--muted)">Bugs board</text></g><rect x="410" y="255" width="180" height="90" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><text x="500.0" y="291" text-anchor="middle" font-family="'Space Grotesk',sans-serif" font-size="17" font-weight="600" fill="var(--ink)">Game = Epic</text><text x="500.0" y="315" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="10" fill="var(--muted)">holds docs · links stories</text></svg></div>
+    <p class="epic-close">Read it as three levels: the <b>epic</b> is the game (docs + links only), each <b>story</b> is one team's slice titled by its tag — [GE] [FE] [Platform] [BO] [Data] [Math] [DevOps] [QC] [Bug] — and the actual work happens in the <b>tasks / subtasks</b> inside each story. This keeps the epic readable instead of piling every job onto it.</p>
   </section>
 
-  <footer>Internal training draft · DoE/DoD items are starter suggestions — teams refine them and add templates. Certification / Localization / Release are scoped for later sessions.</footer>
+  <footer>Internal training draft · DoR/DoD adapted from the SWAT-team SA reference · DoE/DoD items are starter suggestions — teams refine them and add templates. Certification / Localization / Release are scoped for later sessions.</footer>
 </div>
 
 <div class="scrim" id="scrim"></div>
@@ -250,29 +268,30 @@ footer{margin-top:24px;font-size:12.5px;color:var(--faint);text-align:center}
 
 <script>
 const ROLES={
- "HOS":["Head of Studio","Single accountable owner & sign-off for the whole studio."],
- "FE":["Front-end","Builds the game UI on the Studio board; optimizes the game."],
- "QC":["Quality Control","Writes test cases & runs end-to-end testing on the Studio board."],
- "Art":["Art","Owns art direction & moodboard; co-owns Game Review & Art."],
- "TD":["Technical Director","Owns To Do — reviews the Definition of Ready and the production queue."],
- "TL":["Technical Lead","Owns one game line, reports to TD. Pulls a Reskin straight into Development."],
- "Math":["Math","Owns the Final Math Model, RTP pairing & simulation; supports the design concept."],
- "Architect":["Architect","Owns Contract Alignment — sets the work split, accountable for sign-off before Development."],
- "BE":["Backend Engineer","Builds the game engine on the RNG vertical."],
- "BO":["Back-office","Builds the backoffice history tool on the BO vertical."],
- "Platform":["Platform","Wallet & money on the Platform vertical."],
- "DevOps":["DevOps","CICD build pipeline on the DevOps vertical."],
- "HoGD":["Head of Game Design","Owns Game Review & Art; co-signs the Math model."],
- "GD":["Game Design","The studio's game design team."],
- "Head of PMO":["Head of PMO","Supports tier / ranking at To Do; decides declines."],
- "PM":["Project Manager","Watcher on every Game-board stage; assignee on coordination stages."],
- "CS":["Customer Success","Creates game ideas and enters the Wishful Date."],
- "C-level":["C-level","C-suite executive. Owns and approves prioritization."],
- "D-level":["D-level","Director level. May prioritize, but requires C-level approval."]
+ "HOS":["Head of Studio","The person accountable for everything a studio ships. Triages new ideas for feasibility, assigns each to a studio, and gives the final acceptance sign-off at Integration QC."],
+ "FE":["Front-end","Builds the player-facing game UI on the Studio board during Development (and signs off the FE-facing contract), then optimizes the finished game."],
+ "QC":["Quality Control","Writes the test cases during Development and runs the full end-to-end test at Integration QC before acceptance."],
+ "Art":["Art","Owns the visual direction: builds the moodboard / art style and reviews the art side of Game Review & Art."],
+ "TD":["Technical Director","Owns the To Do queue: reviews the Definition of Ready, approves the tier & ranking, and decides when a game is pulled into production."],
+ "TL":["Technical Lead","Runs one game line under the TD. For a Reskin (new art over an existing game) the TL pulls it straight into Development, skipping Math."],
+ "Math":["Math","Owns and pulls the Math stage. Builds the Final Math Model — RTP, volatility & feature math on one agreed standard — and gives early input on the design concept."],
+ "Architect":["Architect (SA)","Solution Architect. Reviews & approves each team's solution, freezes & versions the cross-team contracts (disputes → ADR), runs the compliance / cert checklist, and owns end-to-end NFR (latency, throughput, availability) that no single team owns."],
+ "Game Engine":["Game Engine","Builds the game engine — core game logic, certified RNG, seed / audit log and round / replay data — on the RNG vertical."],
+ "BO":["Back-office","Builds back-office config & tools: config schema with validation, RTP variant / bet limit / market, RBAC and audit trail, on the BO vertical."],
+ "Platform":["Platform","Integrates Wallet · Auth · LSC · Promotion · JackPot on the Platform vertical; keeps money = Wallet as the source of truth."],
+ "DevOps":["DevOps","Owns CI/CD and deployment: env parity (Staging = Production = cert), blue-green / canary + rollback, and deploy order on contract change."],
+ "Data":["Data","Owns reports, KPIs and events: GGR / NGR and actual-vs-theoretical RTP, reconciled with Wallet; defines the event schema and the regulator reports."],
+ "HoGD":["Head of Game Design","Owns Game Review & Art (reviews and locks the mechanic) and co-signs the Final Math Model with Math."],
+ "GD":["Game Design","The studio's game-design team. Drafts the concept & mechanic, then completes the Final GDD."],
+ "Head of PMO":["Head of PMO","Supports the TD on setting tier & ranking at To Do."],
+ "PM":["Project Manager","Coordinates delivery. Verifies a game is fully ready and pulls it into production; watches every Game-board stage and is the assignee on the coordination-heavy ones — but never pushes work, teams still pull."],
+ "CS":["Customer Success","The business / customer-facing team. Originates game ideas from market demand and sets the Wishful Date — the date the business wants the game live — which feeds prioritization."],
+ "C-level":["C-level","C-suite executives. Own and approve which games are prioritized into production."],
+ "D-level":["D-level","Director level. Can propose a prioritization, but it only takes effect with C-level approval."]
 };
 const GROUPS=[
  ["Studio",["HOS","FE","QC","Art"]],
- ["PACT",["TD","TL","Math","Architect","BE","BO","Platform","DevOps"]],
+ ["PACT",["TD","TL","Math","Architect","Game Engine","BO","Platform","DevOps","Data"]],
  ["KCS",["HoGD","GD"]],
  ["PMO",["Head of PMO","PM"]],
  ["Business",["CS"]],
@@ -280,99 +299,99 @@ const GROUPS=[
 ];
 
 const STAGES={
- start:{board:"idea",type:"start",name:"Start",sub:"idea logged + flags",purpose:"A new game idea is created and logged.",
-  pull:{owns:["HOS","CS","GD"],signoff:[],pm:null,note:"Created by anyone with idea-create rights."},
-  doe:[["New idea","A fresh game concept enters the pipeline."]],
-  dod:[["Idea ticket","Created with title & summary."],["Game type","New / Reskin / Change selected."],["Wishful Date","Target date entered by CS / creator."],["Market flags","Needs Certification / Localization marked."]],
-  who:[["HOS","creates ideas","Idea board"],["CS","creates ideas + Wishful Date","Idea board"],["GD","creates ideas","Idea board"]],
+ start:{board:"idea",type:"start",name:"Start",sub:"idea logged + flags",purpose:"A new game idea is created and logged on the Idea board with its basic info.",
+  pull:{owns:["HOS","CS","GD"],signoff:[],pm:null,note:"Anyone with idea-create rights can open a ticket here."},
+  doe:[["A new idea","Someone wants to propose a new game — the only entry condition."]],
+  dod:[["Idea ticket","A ticket on the Idea board with the game's working title and a short summary of the concept."],["Game type","Marked New (brand-new game), Reskin (new art over an existing game) or Change (change to a live game) — this decides the later route."],["Wishful Date","The date the business wants the game live. Used later to rank priority."],["Market flags","Tick Needs Certification and/or Needs Localization if the game targets regulated or non-English markets — these drive the auto-route after Done."]],
+  who:[["HOS","Creates an idea and inputs the required info (type, Wishful Date, flags).","Idea board"],["CS","Creates an idea and inputs the required info, including the Wishful Date — the business go-live date.","Idea board"],["GD","Creates an idea and inputs the required info.","Idea board"]],
   next:[["pending","",'fwd']]},
- pending:{board:"idea",type:"stage",name:"Pending Review",sub:"feasibility & routing",purpose:"Studio checks whether the idea is feasible to produce, and routes it to a studio.",
-  pull:{owns:["HOS"],signoff:[],pm:null,note:"Decline is a push-back: only Head of PMO sends an idea to Declined."},
-  doe:[["Start DoD","Idea ticket with all mandatory fields."]],
-  dod:[["Feasibility note","Whether it can be produced, documented."],["Resource check","Studio capacity confirmed."],["Game Studio","Owning studio assigned on the ticket."]],
-  who:[["HOS","reviews feasibility + resources","Idea board"]],
-  next:[["prioritized","feasible & has resource",'fwd'],["declined","not feasible / no resource",'back',["Head of PMO"]]]},
- declined:{board:"idea",type:"terminal",name:"Declined",sub:"not produced",purpose:"Idea will not be produced. End state.",
-  pull:{owns:["Head of PMO"],signoff:[],pm:null,note:"Push-back from Pending Review by Head of PMO."},
-  doe:[["Not feasible","Pending Review found no feasibility / resource."]],
-  dod:[["Decline reason","Why it was declined, recorded."]],
-  who:[],next:[]},
- prioritized:{board:"idea",type:"stage",name:"Prioritized",sub:"prioritized + resourced",purpose:"The idea is prioritized, then resources and timeline are planned for it.",
-  pull:{owns:["C-level"],signoff:["C-level"],pm:null,note:"D-level may prioritize, but it requires C-level approval."},
-  doe:[["Pending Review DoD","Feasible & studio assigned."]],
-  dod:[["Priority / tier intent","Where it sits in the production queue."],["Resource plan","People & teams allocated."],["Timeline plan","Target milestones."],["C-level approval","Prioritization approved by C-level."]],
-  who:[["C-level","prioritizes & approves","Idea board"],["D-level","may prioritize (needs C-level approval)","Idea board"]],
+ pending:{board:"idea",type:"stage",name:"Pending Review",sub:"feasibility & routing",purpose:"The studio decides whether the idea can actually be built, and assigns the studio that will own it.",
+  pull:{owns:["HOS"],signoff:[],pm:null,note:"Decline is a push-back — only the Head of PMO can send an idea to Declined."},
+  doe:[["Complete idea ticket","Game type, Wishful Date and market flags are all filled in."]],
+  dod:[["Feasibility note","A short written judgement on whether the studio can realistically build this idea."],["Resource check","Confirmation that the studio has the people & skills to take it on."],["Game Studio set","The owning studio is recorded on the ticket so everyone knows who runs it."]],
+  who:[["HOS","Reviews whether the idea is buildable with current capacity, then assigns the owning Game Studio.","Idea board"]],
+  next:[["prioritized","feasible & has resource",'fwd'],["declined","not feasible / no resource",'back',["C-level"]]]},
+ declined:{board:"idea",type:"terminal",name:"Declined",sub:"not produced",purpose:"The idea will not be produced. This is an end state.",
+  pull:{owns:["C-level"],signoff:["C-level"],pm:null,note:"Leadership decision, like Prioritized: C-level decides to decline; D-level may propose it but needs C-level approval. Reached as a push-back from Pending Review."},
+  doe:[["Judged not feasible","Pending Review concluded the idea can't be resourced or built."]],
+  dod:[["Decline reason","A recorded reason, so the decision stays traceable."]],
+  who:[["C-level","Decides the idea will not be produced.","Idea board"],["D-level","May propose declining, but needs C-level approval.","Idea board"]],next:[]},
+ prioritized:{board:"idea",type:"stage",name:"Prioritized",sub:"prioritized + resourced",purpose:"Leadership decides the game's priority, then a resource and timeline plan is drawn up for it.",
+  pull:{owns:["C-level"],signoff:["C-level"],pm:null,note:"D-level may propose the prioritization, but it only counts with C-level approval."},
+  doe:[["Feasible idea","Reviewed as buildable, with a studio assigned."]],
+  dod:[["Priority / tier intent","The intended tier (Top / High / …) and where it sits relative to other games."],["Resource plan","Which people and teams are allocated to build it."],["Timeline plan","Target milestone dates, anchored to the Wishful Date."],["C-level approval","A C-level sign-off confirming this game is prioritized into the pipeline."]],
+  who:[["C-level","Decides the game's priority and approves the resource & timeline plan.","Idea board"],["D-level","May draft the prioritization, but needs C-level approval to confirm it.","Idea board"]],
   next:[["design","",'fwd']]},
- design:{board:"idea",type:"stage",name:"Game Design",sub:"design & mechanic drafted",purpose:"GD completes the game design and mechanic.",
+ design:{board:"idea",type:"stage",name:"Game Design",sub:"design & mechanic drafted",purpose:"The game-design team writes the game design and defines the core mechanic.",
   pull:{owns:["GD"],signoff:[],pm:null,note:""},
-  doe:[["Prioritized DoD","Priority, resource & timeline set."]],
-  dod:[["Game design draft","Core gameplay & rules drafted."],["Mechanic draft","Game mechanic defined."],["Math concept","Early math direction agreed."]],
-  who:[["GD","leads game design","Idea board"],["Math","supports the concept","—"]],
+  doe:[["Prioritized & resourced","Priority is set with a resource & timeline plan."]],
+  dod:[["Game design draft","A first written design: the core gameplay loop and its rules."],["Mechanic draft","The defining game mechanic, described clearly enough to be reviewed."],["Math concept","An agreed early direction for the math (volatility / RTP feel), informed by Math."]],
+  who:[["GD","Drafts the full game design and the core mechanic.","Idea board"],["Math","Gives early input on the math direction — no model is built yet.","—"]],
   next:[["reviewart","",'fwd']]},
- reviewart:{board:"idea",type:"stage",name:"Game Review & Art",sub:"mechanic & art reviewed",purpose:"The game mechanic and the moodboard / art are reviewed before hand-off.",
-  pull:{owns:["HoGD","Art"],signoff:[],pm:null,note:"Two owners: HoGD (mechanic) + Art (moodboard). Redo is a push-back to Game Design."},
-  doe:[["Game Design DoD","Design & mechanic drafted."]],
-  dod:[["Mechanic review","Mechanic reviewed & locked (HoGD)."],["Moodboard review","Art direction / moodboard reviewed (Art)."]],
-  who:[["HoGD","reviews the mechanic","Idea board"],["Art","reviews moodboard / art","Idea board"]],
+ reviewart:{board:"idea",type:"stage",name:"Game Review & Art",sub:"mechanic & art reviewed",purpose:"The mechanic and the moodboard / art direction are reviewed and locked before the game is handed off.",
+  pull:{owns:["HoGD","Art"],signoff:["HoGD"],pm:null,note:"Two owners — HoGD reviews & signs off the mechanic, Art reviews the moodboard. A redo is a push-back to Game Design."},
+  doe:[["Design & mechanic drafted","The game design and the core mechanic exist."]],
+  dod:[["Mechanic review","HoGD has reviewed and locked the game mechanic."],["Moodboard review","Art has reviewed and signed off the moodboard / art direction."]],
+  who:[["HoGD","Reviews and locks the game mechanic.","Idea board"],["Art","Reviews the moodboard and art direction.","Idea board"]],
   next:[["design","need redo",'back',["HoGD"]],["ready","reviewed",'fwd']]},
- ready:{board:"idea",type:"stage",name:"Ready for Development",sub:"mechanic & moodboard ready",purpose:"A ready buffer — the DoR pack is assembled and waiting to be pulled into To Do.",
-  pull:{owns:[],signoff:[],pm:null,note:"No owner — a ready buffer. TD pulls it into To Do, where the Definition of Ready is reviewed."},
-  doe:[["Game Review & Art DoD","Mechanic & moodboard reviewed."],["HoGD sign-off","Approved by Head of Game Design."]],
-  dod:[["Project info pack","All project details complete."],["One Pager","Game DNA one-pager."],["GDD","Full game design document with mechanic."]],
-  who:[],
-  next:[["todo","DoR pack ready · hand-off",'fwd']]},
+ ready:{board:"idea",type:"stage",name:"Ready for Development",sub:"mechanic & moodboard ready",purpose:"A ready buffer: the game waits here until the PM confirms it is fully ready and pulls it into production.",
+  pull:{owns:[],signoff:[],pm:null,pulledBy:["PM"],note:"No team works here — it's a buffer. The PM checks templates, documents and DoD are complete, then pulls the game into To Do (production)."},
+  doe:[["Mechanic & moodboard reviewed","Both reviewed and locked; HoGD has approved."]],
+  dod:[["Project info pack","All the project's basic information gathered in one place."],["One Pager","A one-page summary of the game's DNA — the quick reference everyone reads first."],["GDD","The full Game Design Document with the complete mechanic."]],
+  who:[["PM","Verifies templates, documents and DoD are complete, then pulls the game into production.","—"]],
+  next:[["todo","docs & DoD complete · hand-off",'fwd',["PM"]]]},
 
- todo:{board:"game",type:"stage",name:"To Do",sub:"tiered production queue",purpose:"TD reviews the Definition of Ready and owns the production queue; games are tiered and pulled top-down by capacity.",
-  pull:{owns:["TD"],signoff:["TD"],pm:"assignee",note:"TD reviews DoR & owns the queue. Head of PMO supports tier / ranking. New & Change → Math; Reskin → Development (TL)."},
-  doe:[["Ready for Development DoD","DoR pack ready."]],
-  dod:[["TD sign-off","Definition of Ready approved by TD."],["Tier","Top / High / Medium / Normal / Extreme set."],["Group ranking","Position within the tier."],["ETA","Estimated timeline entered."]],
-  who:[["TD","reviews DoR & owns the queue","Game board"],["Head of PMO","supports tier / ranking","Game board"],["Teams","pull by capacity & category","Game board"]],
+ todo:{board:"game",type:"stage",name:"To Do",sub:"tiered production queue",purpose:"Pact's production queue and the Definition-of-Ready gate. The TD reviews readiness and owns the queue; games are tiered and pulled top-down by capacity.",
+  pull:{owns:["TD"],signoff:["TD"],pm:"assignee",note:"This is the DoR gate: it is green only when the input quality passes AND every team confirms READY. The TD owns the queue; the Head of PMO supports tier / ranking. New & Change → Math; a Reskin is pulled straight into Development by a Technical Lead."},
+  doe:[["Docs / GDD complete","Final & versioned — no remaining \"TBD\" on triggers or features."],["Math model lockable","RTP · volatility · feature math on one agreed standard (shared by Game · Data · BO)."],["Acceptance criteria measurable","Clear, testable criteria for accepting the game."],["Compliance scope stated","Jurisdiction / certification scope is identified."],["Every team confirms READY","Game Engine, Platform, BO, Data, DevOps and the Architect (SA) each confirm they understand and can build their part."]],
+  dod:[["TD sign-off","The TD has reviewed the Definition of Ready and approved the game for production."],["Tier","Tier chosen: Top / High / Medium / Normal / Extreme."],["Group ranking","Its order within the tier, so teams know what to pull first."],["ETA","An estimated completion date entered on the epic."]],
+  who:[["TD","Reviews the Definition of Ready, approves the tier & ranking, and owns the queue.","Game board"],["Head of PMO","Supports the TD on setting the tier and the ranking order.","Game board"],["Teams","Pull a game from the queue when they have capacity — top of their tier first.","Game board"]],
   tier:1,
-  next:[["math","New & Change",'fwd'],["dev","Reskin — bypass",'fwd',["TL"]]]},
- math:{board:"game",type:"stage",name:"Math",sub:"final GDD & math model",purpose:"GD completes the Final GDD; the Math team completes the Final Math Model.",
-  pull:{owns:["GD","Math"],signoff:["Math","HoGD"],pm:"watcher",note:"Double sign-off: Math + Head of Game Design must both agree."},
-  doe:[["To Do DoD","Tiered & ranked; DoR approved."]],
-  dod:[["Final GDD","Locked game design document."],["Final Math Model","RTP & math model completed."],["Sign-off","Math + HoGD double sign-off."]],
-  who:[["GD","completes the Final GDD","Studio board"],["Math","completes Final Math Model","Math vertical"]],
-  child:[["Studio board","Final GDD","—","GD"],["Math vertical","Final Math Model","—","Math"]],
+  next:[["math","New & Change",'fwd',["Math"]],["dev","Reskin — bypass",'fwd',["TL"]]]},
+ math:{board:"game",type:"stage",name:"Math",sub:"final GDD & math model",purpose:"The Final GDD and the Final Math Model are completed and signed off.",
+  pull:{owns:["Math"],signoff:["Math","HoGD"],pm:"watcher",note:"Pulled & owned by the Math team. The math model follows one agreed standard (RTP · volatility · feature math), shared by Game · Data · BO. Double sign-off: Math + Head of Game Design."},
+  doe:[["Approved into production","Tiered, ranked and DoR-approved by the TD."]],
+  dod:[["Final GDD","The locked, complete Game Design Document."],["Final Math Model","The completed math model — RTP, pairing and simulation results."],["Double sign-off","Both Math and the Head of Game Design have signed off the model."]],
+  who:[["Math","Builds the Final Math Model: RTP, pairing and simulation.","Math vertical"],["GD","Finalizes the GDD — the complete, locked design document.","Studio board"]],
+  child:[["Math vertical","[Math] Final math model","","Math"],["Studio board","[GD] Final GDD","","GD"]],
   next:[["contract","",'fwd']]},
- contract:{board:"game",type:"stage",name:"Contract Alignment",sub:"build scope split",purpose:"All production teams align on GDD + Math to split who builds what.",
-  pull:{owns:["Architect"],signoff:["Architect"],pm:"assignee",note:"Architect owns this step — decides who does what."},
-  doe:[["Math DoD","Final GDD + Math Model signed off."]],
-  dod:[["Work split","Tasks assigned per vertical."],["Dependencies","Cross-team dependencies mapped."],["Architect sign-off","Plan approved by Architect."]],
-  who:[["Architect","owns & splits the work","Game board"],["Teams","align on the work split","—"]],
+ contract:{board:"game",type:"stage",name:"Contract Alignment",sub:"build scope split",purpose:"All teams align on the GDD + Math model to split who builds what, then the Architect (SA) freezes the contracts.",
+  pull:{owns:["Architect"],signoff:["Architect"],pm:"assignee",note:"Architect = Solution Architect (SA): approves the solution, freezes & versions the cross-team contracts (disputes → ADR), and owns end-to-end NFR."},
+  doe:[["Final GDD & Math Model","Both completed and signed off."]],
+  dod:[["Work split (contract matrix)","Who provides what to whom: FE↔Game, Game↔Platform, Math→Game/Data/BO, etc."],["Contracts frozen & versioned","The SA freezes the cross-team contracts; later changes go through change control."],["Dependencies mapped","Cross-team dependencies identified and agreed."],["SA sign-off","The Architect approves the solution design; disputes recorded as ADRs."]],
+  who:[["Architect","Reviews & approves the solution, splits the build into per-vertical contracts, then freezes them.","Game board"],["Teams","Agree their slice of the work split.","—"]],
   next:[["dev","",'fwd']]},
- dev:{board:"game",type:"stage",name:"Development",sub:"built across verticals",purpose:"Verticals build in parallel; every child ticket links to the game epic.",
-  pull:{owns:["Verticals"],signoff:["Architect"],pm:"assignee",note:"Each vertical sub-team pulls its own ticket. Architect is accountable for sign-off. Leaving needs cheating tools & guides + sign-off from RNG/Math/BO/Platform."},
-  doe:[["Contract Alignment DoD","Work split & Architect sign-off."]],
-  dod:[["Linked tickets","All vertical tickets built & linked to the epic."],["Bug story","One bug story on Bugs board; bugs as children; linked."],["Cheating tools & guides","Provided for QC."],["Team sign-offs","RNG / Math / BO / Platform signed off."]],
-  who:[["BE","game engine","RNG vertical"],["FE","game UI","Studio board"],["BO","backoffice history tool","BO vertical"],["Platform","wallet & money","Platform vertical"],["DevOps","CICD build","DevOps vertical"],["Math","RTP pairing + simulation","Math vertical"],["QC","write test cases","Studio board"]],
-  child:[["RNG vertical","Game engine","—","BE"],["Studio board","Game UI","—","FE"],["BO vertical","Backoffice history tool","—","BO"],["Platform vertical","Wallet & money","—","Platform"],["DevOps vertical","CICD build","—","DevOps"],["Math vertical","RTP pairing + simulation","—","Math"],["Studio board","Test cases","—","QC"],["Bugs board","Bug story (+ child bugs)","—","QC"]],
+ dev:{board:"game",type:"stage",name:"Development",sub:"built across verticals",purpose:"The verticals build their parts in parallel; each builds its own [TAG] story (with tasks/subtasks) linked to the game epic.",
+  pull:{owns:["Verticals"],signoff:["Architect"],pm:"assignee",note:"Each vertical pulls its own story and owns its DOD. The Architect (SA) is accountable for sign-off and validates end-to-end NFR. Leaving Development needs the team sign-offs (Game / Math / BO / Platform)."},
+  doe:[["Build plan signed off","The work split is agreed and the contracts frozen by the Architect (SA)."]],
+  dod:[["Code reviewed & merged","Per branch policy; unit tests meet the agreed coverage threshold."],["Security clean","No open High / Critical security findings."],["Observability + Staging","Logs / metrics / traces per standard; runs on Staging mirroring Production."],["Contract tests passing","Every related contract has a passing contract test with the counterpart team."],["NFR budget met","Meets its assigned latency / throughput slice (team-measured)."],["Stories linked + bug story","All vertical stories built & linked to the epic; bugs as one story on the Bugs board."],["Cheating tools & guides","Provided so QC can test."]],
+  who:[["Game Engine","Builds the core game logic, certified RNG, seed/audit log and round/replay data.","RNG vertical"],["FE","Builds the player-facing game UI and signs off the FE-facing contract.","Studio board"],["Platform","Wallet · Auth · LSC · Promotion · JackPot integration (money = Wallet).","Platform vertical"],["BO","Config (RTP variant, bet limit, market) + back-office tools with RBAC & audit.","BO vertical"],["Data","Reports, KPIs (GGR/NGR, RTP) and events, reconciled with Wallet.","Data vertical"],["DevOps","CI/CD build & deploy, env parity, rollback rehearsed.","DevOps vertical"],["Math","RTP pairing + simulation against the build.","Math vertical"],["QC","Writes the integration test cases.","Studio board"]],
+  child:[["RNG vertical","[GE] Game engine — core logic","","Game Engine"],["Studio board","[FE] Player-facing game UI","","FE"],["Platform vertical","[Platform] Wallet · Auth · LSC · Promotion · JackPot","","Platform"],["BO vertical","[BO] Config & back-office tools","","BO"],["Data vertical","[Data] Reports · KPIs · events","","Data"],["DevOps vertical","[DevOps] CI/CD build & deploy","","DevOps"],["Math vertical","[Math] RTP pairing + simulation","","Math"],["Studio board","[QC] Integration test cases","","QC"],["Bugs board","[Bug] Bug story (+ child bugs)","","QC"]],
   next:[["qc","DoD met",'fwd']]},
- qc:{board:"game",type:"stage",name:"Integration QC",sub:"end-to-end tested",purpose:"Studio QC runs end-to-end testing & acceptance.",
-  pull:{owns:["QC"],signoff:["HOS"],pm:"assignee",note:"HOS signs off acceptance with all mandatory deliverables."},
-  doe:[["Development DoD","Build complete with team sign-offs."]],
-  dod:[["Test cases run","End-to-end test executed."],["Test report","Results documented."],["Acceptance pack","Required deliverables attached."],["HOS sign-off","Acceptance approved by HOS."]],
-  who:[["QC","end-to-end test & acceptance","Studio board"]],
-  child:[["Studio board","End-to-end test run","—","QC"]],
+ qc:{board:"game",type:"stage",name:"Integration QC",sub:"end-to-end tested",purpose:"Studio QC runs the full end-to-end test and prepares acceptance.",
+  pull:{owns:["QC"],signoff:["HOS"],pm:"assignee",note:"The Head of Studio gives the acceptance sign-off once all mandatory deliverables are in."},
+  doe:[["Build complete","All team stories are built with their sign-offs."]],
+  dod:[["Test cases run","The full end-to-end test suite has been executed."],["Test report","Results written up, pass/fail recorded."],["Acceptance pack","All deliverables required for acceptance are attached."],["HOS sign-off","The Head of Studio accepts the game."]],
+  who:[["QC","Runs the full end-to-end test and prepares the acceptance pack.","Studio board"]],
+  child:[["Studio board","[QC] End-to-end test run","","QC"]],
   next:[["opt","",'fwd']]},
- opt:{board:"game",type:"stage",name:"Optimization",sub:"game optimized",purpose:"Optimize the game.",
+ opt:{board:"game",type:"stage",name:"Optimization",sub:"game optimized",purpose:"The finished game is optimized for performance and size.",
   pull:{owns:["FE"],signoff:[],pm:"watcher",note:""},
-  doe:[["Integration QC DoD","Accepted by HOS."]],
-  dod:[["Optimization report","Performance & size tuned."]],
-  who:[["FE","optimizes the game","Studio board"]],
-  child:[["Studio board","Optimization","—","FE"]],
+  doe:[["Accepted by HOS","Integration QC passed and the game was accepted."]],
+  dod:[["Optimization report","Performance and package size tuned and documented."]],
+  who:[["FE","Optimizes the finished game — performance and size.","Studio board"]],
+  child:[["Studio board","[FE] Game optimization","","FE"]],
   next:[["pkg","",'fwd']]},
- pkg:{board:"game",type:"stage",name:"Packaging",sub:"packaged for release",purpose:"Package the game; all teams take part.",
-  pull:{owns:["Teams"],signoff:[],pm:"assignee",note:"PM coordinates closure across all teams."},
-  doe:[["Optimization DoD","Optimization complete."]],
-  dod:[["Build package","Final package produced."],["Epic complete","All tickets, docs & timestamps linked (storage)."]],
-  who:[["Teams","package together","Verticals & Studio"]],
+ pkg:{board:"game",type:"stage",name:"Packaging",sub:"packaged for release",purpose:"The game is packaged for release; all teams take part and close out the epic.",
+  pull:{owns:["Teams"],signoff:[],pm:"assignee",note:"The PM coordinates closure across all teams."},
+  doe:[["Optimization complete","The game has been optimized."]],
+  dod:[["Build package","The final release package is produced."],["Epic complete","The epic has every story, document and timestamp linked — the game's full record (storage)."]],
+  who:[["Teams","Package the game together and make sure the epic has every story, doc and timestamp.","Verticals & Studio"]],
   next:[["done","",'fwd']]},
- done:{board:"game",type:"exit",name:"Done",sub:"development complete",purpose:"Development is finished (not yet released). The system auto-routes based on flags set at idea creation.",
-  pull:{owns:["Auto"],signoff:[],pm:"watcher",note:"Automated move. Flags were set back at Start."},
-  doe:[["Packaging DoD","Packaged & epic complete."]],
-  dod:[["Auto-route","Routed by Needs Cert / Loc flags."]],
+ done:{board:"game",type:"exit",name:"Done",sub:"development complete",purpose:"Development is finished (the game is not yet released). The system auto-routes it based on the flags set at idea creation.",
+  pull:{owns:["Auto"],signoff:[],pm:"watcher",note:"This is an automated move — it reads the flags that were set back at Start."},
+  doe:[["Packaged","The package is produced and the epic is complete."]],
+  dod:[["Auto-routed","The system sends the game on by its Needs Certification / Localization flags."]],
   who:[],next:[],
   routes:[["Needs Certification","Certification track — regulated markets (later session)"],["Needs Localization","Localization track — non-English markets (WIP)"],["Default","Release board — release management (later session)"]]}
 };
@@ -402,7 +421,7 @@ C.forEach(c=>{const link=c.kind==='link',back=c.kind==='back';const stroke=link?
 svg.innerHTML=paths;
 C.forEach(c=>{if(!c.label)return;const el=document.createElement('div');el.className='conn-label';el.style.left=c.lx+'px';el.style.top=c.ly+'px';el.textContent=c.label;canvas.appendChild(el);});
 
-function ownerText(s){const o=s.pull.owns;if(o[0]==='Auto')return'automated';if(!o.length){const nx=(s.next||[]).find(n=>(n[2]||'fwd')!=='back');const no=nx&&STAGES[nx[0]]?STAGES[nx[0]].pull.owns:[];return no.length?'pulled by · <b>'+no.join(' · ')+'</b>':'no owner';}if(s.type==='start')return'by <b>'+o.join(' · ')+'</b>';return'owns · <b>'+o.join(' · ')+'</b>';}
+function ownerText(s){const o=s.pull.owns;if(o[0]==='Auto')return'automated';if(o.length)return(s.type==='start'?'by <b>':'owns · <b>')+o.join(' · ')+'</b>';const by=s.pull.pulledBy||[];return by.length?'pulled by · <b>'+by.join(' · ')+'</b>':'no owner';}
 Object.keys(LAYOUT).forEach(id=>{const n=LAYOUT[id],s=STAGES[id];const b=document.createElement('button');b.className='snode '+s.board+' '+s.type;b.dataset.id=id;b.style.left=n.x+'px';b.style.top=n.y+'px';b.style.width=n.w+'px';b.style.height=n.h+'px';
   let pm='';if(s.pull.pm==='assignee')pm='<span class="pm-badge assignee" title="PM is the assignee here">PM</span>';else if(s.pull.pm==='watcher')pm='<span class="pm-badge" title="PM is a watcher here">PM</span>';
   b.innerHTML=`${pm}<span class="nm">${s.name}</span><span class="sb">${s.sub}</span><span class="own">${ownerText(s)}</span>`;
@@ -410,7 +429,7 @@ Object.keys(LAYOUT).forEach(id=>{const n=LAYOUT[id],s=STAGES[id];const b=documen
 
 const roleChip=(name,kind)=>{const k=ROLES[name];const cls=kind==='signoff'?'role signoff':(!k?'role auto':'role');const t=k?k[0]+' — '+k[1]:name;return `<span class="${cls}" data-role="${name}" title="${t.replace(/"/g,'&quot;')}" tabindex="0" role="button">${name}</span>`;};
 
-function stagesForRole(role){return Object.keys(STAGES).filter(id=>{const s=STAGES[id];if(role==='PM'&&s.pull.pm)return true;return s.pull.owns.includes(role)||s.pull.signoff.includes(role)||s.who.some(w=>w[0]===role);});}
+function stagesForRole(role){return Object.keys(STAGES).filter(id=>{const s=STAGES[id];if(role==='PM'&&(s.pull.pm||(s.pull.pulledBy||[]).includes('PM')))return true;return s.pull.owns.includes(role)||s.pull.signoff.includes(role)||s.who.some(w=>w[0]===role);});}
 const rolesGrid=document.getElementById('rolesGrid'),roleDesc=document.getElementById('roleDesc'),clearBtn=document.getElementById('clearRole');
 rolesGrid.innerHTML=GROUPS.map(([g,rs])=>`<div class="rgroup"><span class="rglabel">${g}</span><div class="rgchips">${rs.map(k=>`<button class="rchip" data-role="${k}">${k}</button>`).join('')}</div></div>`).join('');
 let activeRole=null;
@@ -426,19 +445,20 @@ function selectRole(role){
   roleDesc.innerHTML=`<b>${role} — ${k[0]}.</b> ${k[1]}<span class="acts">${names.length?'Acts in: '+names.join(', '):'Stays outside every step — gates no stage.'}</span>`;
   clearBtn.hidden=false;
 }
-function clearRole(){activeRole=null;document.querySelectorAll('.snode').forEach(n=>n.classList.remove('hl','dim'));canvas.classList.remove('filtering');rolesGrid.querySelectorAll('.rchip').forEach(c=>c.classList.remove('on'));roleDesc.innerHTML='Tap a role to expand its description and highlight the stages where it acts.';clearBtn.hidden=true;}
+function clearRole(){activeRole=null;document.querySelectorAll('.snode').forEach(n=>n.classList.remove('hl','dim'));canvas.classList.remove('filtering');rolesGrid.querySelectorAll('.rchip').forEach(c=>c.classList.remove('on'));roleDesc.innerHTML='Tap a role to read what it does and highlight the stages where it acts.';clearBtn.hidden=true;}
 rolesGrid.querySelectorAll('.rchip').forEach(c=>c.addEventListener('click',()=>selectRole(c.dataset.role)));
 clearBtn.addEventListener('click',clearRole);
 
 const dh=document.getElementById('dh'),db=document.getElementById('db'),drawer=document.getElementById('drawer'),scrim=document.getElementById('scrim');
-function dodTable(items){
+function itemList(items,cls){
   if(!items||!items.length)return '<p class="next-cond">—</p>';
-  const rows=items.map(it=>`<span class="d-nm">${it[0]}</span><span class="d-ds">${it[1]}</span><span class="d-tpl">add template</span>`).join('');
-  return `<div class="dod"><span class="h">Name</span><span class="h">Description</span><span class="h">Template</span>${rows}</div>`;
+  return '<div class="items">'+items.map(it=>`<div class="item ${cls}"><div class="ic"><span class="ic-name">${it[0]}</span><span class="ic-desc">${it[1]}</span></div><span class="ic-tpl">add template</span></div>`).join('')+'</div>';
+}
+function whoList(items){
+  return '<div class="wholist">'+items.map(w=>`<div class="whorow"><div>${roleChip(w[0])}</div><div><div class="wr-what">${w[1]}</div><div class="wr-src">created on · ${w[2]||'—'}</div></div></div>`).join('')+'</div>';
 }
 function childTable(items){
-  const rows=items.map(it=>`<span class="c-vs">${it[0]}</span><span class="c-sum">${it[1]}</span><span class="c-st">${it[2]}</span><span>${roleChip(it[3])}</span>`).join('');
-  return `<div class="child"><span class="h">Vertical/Studio</span><span class="h">Summary</span><span class="h">Status</span><span class="h">Assignee</span>${rows}</div>`;
+  return '<table class="cttable"><thead><tr><th>Vertical / Studio</th><th>Story (Summary)</th><th>Status</th><th>Assignee</th></tr></thead><tbody>'+items.map(it=>`<tr><td class="ct-vs">${it[0]}</td><td class="ct-sum">${it[1]}</td><td><span class="st-pill">${it[2]?it[2]:'To do'}</span></td><td>${roleChip(it[3])}</td></tr>`).join('')+'</tbody></table>';
 }
 function openStage(id){
   const s=STAGES[id];
@@ -448,36 +468,33 @@ function openStage(id){
   const ownsChips=s.pull.owns.length?s.pull.owns.map(r=>roleChip(r)).join(' '):'<span class="next-cond">no owner</span>';
   const signChips=s.pull.signoff.length?s.pull.signoff.map(r=>roleChip(r,'signoff')).join(' '):'<span class="next-cond">— none —</span>';
   const pm=s.pull.pm;
-  const pmCell=pm==='assignee'?`${roleChip('PM')} <span class="next-cond">assignee</span>`:pm==='watcher'?`${roleChip('PM')} <span class="next-cond">watcher</span>`:'<span class="next-cond">not involved</span>';
-  const assigneeMini=pm==='assignee'?'Assignee: PM (coordinates teams)':(s.pull.owns.length?'Assignee: whoever pulls it in':'Pulled into the next stage');
-  let html=`<div class="section"><h3>Ownership</h3><div class="gate"><div class="gate-row">
-    <div class="gate-col"><div class="lbl">Owner (pulls it in)</div><div class="chips">${ownsChips}</div><div class="mini">${assigneeMini}</div></div>
-    <div class="gate-col"><div class="lbl">Sign-off (DoD)</div><div class="chips">${signChips}</div></div>
-    <div class="gate-col"><div class="lbl">PM</div><div class="chips">${pmCell}</div></div>
+  const pmCell=pm==='assignee'?`${roleChip('PM')} <span class="next-cond">assignee</span>`:pm==='watcher'?`${roleChip('PM')} <span class="next-cond">watcher</span>`:((s.pull.pulledBy||[]).includes('PM')?`${roleChip('PM')} <span class="next-cond">pulls it in</span>`:'<span class="next-cond">not involved</span>');
+  const assigneeMini=pm==='assignee'?'Assignee: the PM (coordinates many teams)':(s.pull.owns.length?'Assignee: whoever pulls it in':'Held until it is pulled into production');
+  let html=`<div class="section s-own"><h3>Ownership</h3><div class="gate"><div class="gate-row">
+    <div class="gate-col"><div class="lbl">Owner · pulls it in</div><div class="chips">${ownsChips}</div><div class="mini">${assigneeMini}</div></div>
+    <div class="gate-col"><div class="lbl">Sign-off · DoD</div><div class="chips">${signChips}</div></div>
+    <div class="gate-col"><div class="lbl">Project Manager</div><div class="chips">${pmCell}</div></div>
     </div>${s.pull.note?`<p class="gate-note">${s.pull.note}</p>`:''}</div></div>`;
 
-  html+=`<div class="section"><h3>Definition of Entry</h3>${dodTable(s.doe)}</div>`;
+  html+=`<div class="section s-doe"><h3>Definition of Entry<span class="cnt">to start, without redo</span></h3>${itemList(s.doe,'doe')}</div>`;
 
-  if(s.who.length){
-    const rows=s.who.map(w=>`<span>${roleChip(w[0])}</span><span class="what">${w[1]}</span><span class="src">${w[2]||'—'}</span>`).join('');
-    html+=`<div class="section"><h3>Who does what</h3><div class="who"><span class="who-h">Role</span><span class="who-h">What they do here</span><span class="who-h">Task created on</span>${rows}</div></div>`;
-  }
+  if(s.who.length) html+=`<div class="section s-who"><h3>Who does what<span class="cnt">${s.who.length} role${s.who.length>1?'s':''}</span></h3>${whoList(s.who)}</div>`;
 
-  html+=`<div class="section"><h3>Definition of Done</h3>${dodTable(s.dod)}</div>`;
+  html+=`<div class="section s-dod"><h3>Definition of Done<span class="cnt">done &amp; safe to pass on</span></h3>${itemList(s.dod,'dod')}</div>`;
 
-  if(s.child&&s.child.length) html+=`<div class="section"><h3>Child tickets</h3>${childTable(s.child)}</div>`;
-  if(s.tier) html+=`<div class="section"><h3>Tier limits</h3><div class="tier"><table><tr><td>Top</td><td>5</td></tr><tr><td>High</td><td>10</td></tr><tr><td>Medium</td><td>20</td></tr><tr><td>Normal</td><td>25</td></tr><tr class="extreme"><td>Extreme</td><td>2</td></tr></table></div><p class="tier-cap">Max games <b>concurrently</b> across the whole Game board. Extreme is a reserved slot — using it means you may pend the lowest-priority game in flight to cut one in.</p></div>`;
+  if(s.child&&s.child.length) html+=`<div class="section s-child"><h3>Child stories<span class="cnt">linked to the epic</span></h3>${childTable(s.child)}</div>`;
+  if(s.tier) html+=`<div class="section s-tier"><h3>Tier limits</h3><div class="tier"><table><tr><td>Top</td><td>5</td></tr><tr><td>High</td><td>10</td></tr><tr><td>Medium</td><td>20</td></tr><tr><td>Normal</td><td>25</td></tr><tr class="extreme"><td>Extreme</td><td>2</td></tr></table></div><p class="tier-cap">Max games <b>concurrently</b> across the whole Game board. Extreme is a reserved slot — using it means you may pend the lowest-priority game in flight to cut one in.</p></div>`;
 
   if(s.next.length){
-    html+=`<div class="section"><h3>Next stage</h3><div class="next">`+s.next.map(n=>{
+    html+=`<div class="section s-next"><h3>Next stage</h3><div class="next">`+s.next.map(n=>{
       const to=n[0],cond=n[1],dir=n[2]||'fwd',by=n[3]||(STAGES[to]?STAGES[to].pull.owns:[]);
       const label=dir==='back'?'Pushed back to':'Pulled into';const arrow=dir==='back'?'↩':'→';
       const byc=by.length?by.map(r=>roleChip(r)).join(' '):'<span class="next-cond">next team</span>';
-      return `<div class="next-item"><span class="next-arrow">${arrow}</span><span class="next-to go" data-go="${to}">${STAGES[to]?STAGES[to].name:to}</span>${cond?`<span class="next-cond">· ${cond}</span>`:''}<span class="next-by"><span class="pl">${label} by</span>${byc}</span></div>`;
+      return `<div class="next-item ${dir}"><span class="next-arrow">${arrow}</span><span class="next-to go" data-go="${to}">${STAGES[to]?STAGES[to].name:to}</span>${cond?`<span class="next-cond">· ${cond}</span>`:''}<span class="next-by"><span class="pl">${label} by</span>${byc}</span></div>`;
     }).join('')+`</div></div>`;
   }
-  if(s.routes){html+=`<div class="section"><h3>Routes after Done</h3><div class="next">`+s.routes.map(r=>`<div class="next-item"><span class="next-arrow">→</span><span class="next-to">${r[0]}</span><span class="next-cond">· ${r[1]}</span></div>`).join('')+`</div></div>`;}
-  if(!s.next.length && !s.routes) html+=`<div class="section"><h3>Next stage</h3><p class="purpose">End state — no onward move.</p></div>`;
+  if(s.routes){html+=`<div class="section s-next"><h3>Routes after Done</h3><div class="next">`+s.routes.map(r=>`<div class="next-item fwd"><span class="next-arrow">→</span><span class="next-to">${r[0]}</span><span class="next-cond">· ${r[1]}</span></div>`).join('')+`</div></div>`;}
+  if(!s.next.length && !s.routes) html+=`<div class="section s-next"><h3>Next stage</h3><p class="purpose">End state — no onward move.</p></div>`;
 
   db.innerHTML=html;db.scrollTop=0;
   drawer.classList.add('open');scrim.classList.add('open');

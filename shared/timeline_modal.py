@@ -63,17 +63,37 @@ TIMELINE_CSS = """\
   .tl-wrap { display: flex; flex-direction: column; }
 
   .tl-row { display: grid; grid-template-columns: 150px 1fr 52px; gap: 12px; align-items: center;
-            padding: 7px 0; }
+            padding: 7px 8px; border-radius: 8px; transition: background .12s; }
+  .tl-row:hover { background: #24262f; }
+  .tl-group .tl-row:hover { background: #1f2026; }
   .tl-name { font-size: 12.5px; color: #c2c6d0; text-align: right; padding-right: 2px;
              white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tl-row.parent .tl-name { font-weight: 600; color: #e7e9ef; }
   .tl-bararea { position: relative; height: 22px; }
+
+  /* Hover tooltip: start / end / due dates per row */
+  .tl-tip { position: absolute; left: 0; bottom: calc(100% + 7px); z-index: 6;
+            background: #2a2d36; border: 1px solid #3a3d48; border-radius: 8px;
+            padding: 7px 10px; box-shadow: 0 10px 24px rgba(0,0,0,0.45);
+            font-size: 11px; line-height: 1.55; color: #e7e9ef; white-space: nowrap;
+            opacity: 0; transform: translateY(4px); pointer-events: none;
+            transition: opacity .12s, transform .12s; }
+  .tl-row:hover .tl-tip { opacity: 1; transform: translateY(0); }
+  .tl-tip-name { font-weight: 600; color: #f2f4f8; margin-bottom: 3px; }
+  .tl-tip-k { color: #8a8f9c; display: inline-block; min-width: 38px; }
+  .tl-tip-tag { margin-top: 3px; font-weight: 600; }
+  .tl-tip-tag.saved, .tl-tip-tag.zero { color: #8ec45a; }
+  .tl-tip-tag.overrun { color: #e8736e; }
+  .tl-tip-tag.progress { color: #9aa0ac; }
   .tl-seg { position: absolute; height: 18px; top: 2px; border-radius: 4px; box-sizing: border-box; }
   .tl-seg.actual   { background: #4d8bf0; }
   .tl-seg.saved    { background: #8ec45a; }
   .tl-seg.overrun  { background: #e8993c; }
   .tl-seg.progress { background: #4d8bf0; }
   .tl-seg.future   { background: transparent; border: 1px dashed #3f4350; height: 20px; top: 1px; }
+  /* Square the seam where actual meets the early/late segment → one continuous bar. */
+  .tl-seg.join-right { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  .tl-seg.join-left  { border-top-left-radius: 0; border-bottom-left-radius: 0; }
   .tl-delta { font-size: 11.5px; text-align: right; color: #6f7484; }
   .tl-delta.saved   { color: #8ec45a; font-weight: 600; }
   .tl-delta.overrun { color: #e8736e; font-weight: 600; }
@@ -143,6 +163,26 @@ TIMELINE_JS = r"""
   function tlDate(s) { return s ? new Date(String(s).substring(0, 10)) : null; }
   function tlDiff(a, b) { return Math.round((b - a) / 86400000); }
   function tlFmt(d) { return d ? d.toISOString().substring(5, 10) : ''; }
+  const TL_MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function tlDay(d) { return d ? TL_MON[d.getMonth()] + ' ' + d.getDate() : '—'; }
+
+  // Hover tooltip markup: start / end / due dates + verdict for one row.
+  function tlTip(s, as_, ae, eta) {
+    const L = ['<div class="tl-tip-name">' + tlEsc(s.name) + '</div>'];
+    if (as_) L.push('<div><span class="tl-tip-k">Start</span>' + tlDay(as_) + '</div>');
+    if (ae)  L.push('<div><span class="tl-tip-k">End</span>' + tlDay(ae) + '</div>');
+    if (eta) L.push('<div><span class="tl-tip-k">Due</span>' + tlDay(eta) + '</div>');
+    let tag = 'Not started', cls = 'progress';
+    if (as_ && ae) {
+      if (eta) { const d = tlDiff(eta, ae);
+        if (d > 0) { tag = '+' + d + 'd late'; cls = 'overrun'; }
+        else if (d < 0) { tag = (-d) + 'd early'; cls = 'saved'; }
+        else { tag = 'On time'; cls = 'zero'; }
+      } else { tag = 'Done'; cls = 'zero'; }
+    } else if (as_) { tag = 'In progress'; cls = 'progress'; }
+    L.push('<div class="tl-tip-tag ' + cls + '">' + tag + '</div>');
+    return '<div class="tl-tip">' + L.join('') + '</div>';
+  }
 
   // Build an estimated stage list from the created date (no real changelog).
   function tlEstimateStages(created) {
@@ -186,16 +226,17 @@ TIMELINE_JS = r"""
       if (as_ && ae) {
         // Completed — blue actual, plus saved (green) or overrun (orange) vs ETA.
         const barEnd = (eta && eta < ae) ? eta : ae;
-        segs += '<div class="tl-seg actual" style="left:' + pct(as_).toFixed(1) + '%;width:' +
-                Math.max(pct(barEnd) - pct(as_), 0.6).toFixed(1) + '%"></div>';
+        const d = eta ? tlDiff(eta, ae) : 0;  // >0 overrun, <0 saved
+        const adj = !!eta && d !== 0;  // an early/late segment butts against actual
+        segs += '<div class="tl-seg actual' + (adj ? ' join-right' : '') + '" style="left:' +
+                pct(as_).toFixed(1) + '%;width:' + Math.max(pct(barEnd) - pct(as_), 0.6).toFixed(1) + '%"></div>';
         if (eta) {
-          const d = tlDiff(eta, ae);  // >0 overrun, <0 saved
           if (d < 0) {
-            segs += '<div class="tl-seg saved" style="left:' + pct(ae).toFixed(1) + '%;width:' +
+            segs += '<div class="tl-seg saved join-left" style="left:' + pct(ae).toFixed(1) + '%;width:' +
                     Math.max(pct(eta) - pct(ae), 0.6).toFixed(1) + '%"></div>';
             delta = d + 'd'; deltaCls = 'saved';
           } else if (d > 0) {
-            segs += '<div class="tl-seg overrun" style="left:' + pct(eta).toFixed(1) + '%;width:' +
+            segs += '<div class="tl-seg overrun join-left" style="left:' + pct(eta).toFixed(1) + '%;width:' +
                     Math.max(pct(ae) - pct(eta), 0.6).toFixed(1) + '%"></div>';
             delta = '+' + d + 'd'; deltaCls = 'overrun';
           } else { delta = '±0d'; deltaCls = 'zero'; }
@@ -214,7 +255,7 @@ TIMELINE_JS = r"""
       const row =
         '<div class="tl-row ' + (level === 0 ? 'parent' : 'child') + '">' +
           '<div class="tl-name">' + tlEsc(s.name) + '</div>' +
-          '<div class="tl-bararea">' + segs + '</div>' +
+          '<div class="tl-bararea">' + segs + tlTip(s, as_, ae, eta) + '</div>' +
           '<div class="tl-delta ' + deltaCls + '">' + delta + '</div>' +
         '</div>';
 
@@ -254,7 +295,8 @@ TIMELINE_JS = r"""
       tlRenderRows(tlEstimateStages(created));
     };
 
-    if (!String(key).startsWith('GAME-')) { estimate(); return; }
+    const _k = String(key);
+    if (!_k.startsWith('GAME-') && !_k.startsWith('CER-')) { estimate(); return; }
 
     // The timeline endpoint lives on the game-status blueprint, mounted at root
     // both standalone and inside the Flask shell.
