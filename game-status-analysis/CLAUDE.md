@@ -24,15 +24,20 @@ node opens a right panel listing those tickets (Key + Summary + Assignee + link 
 
 | Column | Project | Statuses shown |
 |---|---|---|
-| IDEAS | `ID` | Pending Review, Declined, Approved for Production, Prioritized, Game Design & Math, Game Review & Art, Ready for Production with Game Mechanic (+ synthetic Start) |
-| GAMES | `GAME` | Planned, Math, Contract Alignment, Development, Integration QC, Optimization, Packaging, Done |
+| IDEAS | `ID` | Pending Review, Prioritized, Game Design, Game Review & Art, Ready for Development (Declined branches off; + synthetic Start) |
+| GAMES | `GAME` | To Do, Math, Contract Alignment, Development, Integration QC, Packaging, Done |
 | CERTIFICATION | `CER` | To Do, In Progress, Done |
 | LOCALIZATION | `LOC` | To Do, In Progress, Done |
 | RELEASE | `RM` | Requested, To Do, Production Ready, Monitoring, Released |
 
 Only the statuses drawn in the diagram are counted; tickets in any other status
-(e.g. RM `Backlog`/`UAT`) are excluded. Node **display labels** are decoupled from
-the exact Jira **status** string used for count lookup (see `graph_layout.py`).
+(e.g. RM `Backlog`/`UAT`) are excluded. Each node carries a `status_id` (Jira's
+internal status id); at generation time `generate_game_status_html.py` overwrites
+each node's `status`/`label` from `result/jira_statuses.json` keyed on that id, so
+**a Jira admin renaming a status auto-updates the node label on the next refresh**.
+A node whose `status_id` no longer exists in Jira will keep its hardcoded fallback
+label and can never match tickets — keep `status_id`s in `graph_layout.py` aligned
+with the live ids (cross-check via `GET /rest/api/3/project/<KEY>/statuses`).
 `ID`/`CER`/`LOC` may legitimately show 0 — those projects are new (LOCALIZATION is
 flagged "wip").
 

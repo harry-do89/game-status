@@ -58,25 +58,25 @@ NEXT_SPACES = {
 # ── Nodes ───────────────────────────────────────────────────────────────────────
 # space = Jira project key; status = exact Jira status (None for the synthetic Start).
 NODES = {
-    # IDEAS (project ID)
+    # IDEAS (project ID) — order: Pending Review → Prioritized → Game Design →
+    # Game Review & Art → Ready for Development (Declined branches off Pending Review).
     "start":          {"space": "ID",   "label": "Start",                  "status": None,                                  "cx": 510,  "cy": 33, "kind": "start", "icon": "play"},
     "pending_review": {"space": "ID",   "label": "Pending Review",         "status": "Pending Review",                      "status_id": "12146", "cx": 510,  "cy": _row(0), "icon": "search"},
     "declined":       {"space": "ID",   "label": "Declined",               "status": "Declined",                            "status_id": "12060", "cx": 185,  "cy": _row(0), "icon": "x-circle"},
-    "approved":       {"space": "ID",   "label": "Approve for Production",  "status": "Approved for Production",             "status_id": "12110", "cx": 510,  "cy": _row(1), "icon": "check-circle"},
-    "prioritized":    {"space": "ID",   "label": "Prioritized",            "status": "Prioritized",                         "status_id": "12405", "cx": 510,  "cy": _row(2), "icon": "list"},
-    "design_math":    {"space": "ID",   "label": "Game Design & Math",     "status": "Game Design & Math",                  "status_id": "12414", "cx": 510,  "cy": _row(3), "icon": "sliders"},
-    "review_art":     {"space": "ID",   "label": "Game Review & Art",      "status": "Game Review & Art",                   "status_id": "12415", "cx": 510,  "cy": _row(4), "icon": "eye"},
-    "ready_prod":     {"space": "ID",   "label": "Ready for Production",    "status": "Ready for Development",               "status_id": "12149", "cx": 510,  "cy": _row(5), "icon": "rocket"},
+    "prioritized":    {"space": "ID",   "label": "Prioritized",            "status": "Prioritized",                         "status_id": "12405", "cx": 510,  "cy": _row(1), "icon": "list"},
+    "game_design":    {"space": "ID",   "label": "Game Design",            "status": "Game Design",                         "status_id": "12044", "cx": 510,  "cy": _row(2), "icon": "sliders"},
+    "review_art":     {"space": "ID",   "label": "Game Review & Art",      "status": "Game Review & Art",                   "status_id": "12415", "cx": 510,  "cy": _row(3), "icon": "eye"},
+    "ready_prod":     {"space": "ID",   "label": "Ready for Development",   "status": "Ready for Development",               "status_id": "12149", "cx": 510,  "cy": _row(4), "icon": "rocket"},
 
-    # GAMES (project GAME)
-    "planned":        {"space": "GAME", "label": "Planned",          "status": "Planned",           "status_id": "12150", "cx": 890, "cy": _row(0), "icon": "calendar"},
+    # GAMES (project GAME) — order: To Do → Math → Contract Alignment → Development →
+    # Integration QC → Packaging → Done.
+    "game_todo":      {"space": "GAME", "label": "To Do",            "status": "To Do",             "status_id": "10532", "cx": 890, "cy": _row(0), "icon": "clipboard"},
     "math":           {"space": "GAME", "label": "Math",             "status": "Math",              "status_id": "12393", "cx": 890, "cy": _row(1), "icon": "hash"},
     "contract":       {"space": "GAME", "label": "Contract Alignment","status": "Contract Alignment","status_id": "12412", "cx": 890, "cy": _row(2), "icon": "doc"},
     "development":    {"space": "GAME", "label": "Development",       "status": "Development",       "status_id": "3",     "cx": 890, "cy": _row(3), "icon": "code"},
     "integration_qc": {"space": "GAME", "label": "Integration QC",   "status": "Integration QC",    "status_id": "12397", "cx": 890, "cy": _row(4), "icon": "users"},
-    "optimization":   {"space": "GAME", "label": "Optimization",     "status": "Optimization",      "status_id": "12417", "cx": 890, "cy": _row(5), "icon": "sliders"},
-    "packaging":      {"space": "GAME", "label": "Packaging",        "status": "Packaging",         "status_id": "12048", "cx": 890, "cy": _row(6), "icon": "box"},
-    "games_done":     {"space": "GAME", "label": "Done",             "status": "Ready to Release",  "status_id": "12457", "cx": 890, "cy": _row(7), "icon": "check"},
+    "packaging":      {"space": "GAME", "label": "Packaging",        "status": "Packaging",         "status_id": "12048", "cx": 890, "cy": _row(5), "icon": "box"},
+    "games_done":     {"space": "GAME", "label": "Done",             "status": "Done",              "status_id": "10533", "cx": 890, "cy": _row(6), "icon": "check"},
 
     # CERTIFICATION (project CER)
     "cert_todo":       {"space": "CER", "label": "To Do",       "status": "To Do",       "status_id": "10532", "cx": 1320, "cy": _row(0), "icon": "clipboard"},
@@ -108,21 +108,19 @@ EDGES = [
     {"src": "start",          "dst": "pending_review", "route": "down", "label": ""},
     {"src": "pending_review", "dst": "declined",       "route": "wp",   "label": "",
      "points": [(368, _row(0)), (327, _row(0))]},
-    {"src": "pending_review", "dst": "approved",       "route": "down", "label": ""},
-    {"src": "approved",       "dst": "prioritized",    "route": "down", "label": ""},
-    {"src": "prioritized",    "dst": "design_math",    "route": "down", "label": ""},
-    {"src": "design_math",    "dst": "review_art",     "route": "down", "label": ""},
+    {"src": "pending_review", "dst": "prioritized",    "route": "down", "label": ""},
+    {"src": "prioritized",    "dst": "game_design",    "route": "down", "label": ""},
+    {"src": "game_design",    "dst": "review_art",     "route": "down", "label": ""},
     {"src": "review_art",     "dst": "ready_prod",     "route": "down", "label": ""},
-    {"src": "ready_prod",     "dst": "planned",        "route": "wp",   "label": "",
-     "points": [(368, _row(5)), (700, _row(5)), (700, _row(0)), (748, _row(0))]},
+    {"src": "ready_prod",     "dst": "game_todo",      "route": "wp",   "label": "",
+     "points": [(368, _row(4)), (700, _row(4)), (700, _row(0)), (748, _row(0))]},
 
     # GAMES
-    {"src": "planned",        "dst": "math",          "route": "down", "label": ""},
+    {"src": "game_todo",      "dst": "math",          "route": "down", "label": ""},
     {"src": "math",           "dst": "contract",      "route": "down", "label": ""},
     {"src": "contract",       "dst": "development",   "route": "down", "label": ""},
     {"src": "development",    "dst": "integration_qc","route": "down", "label": ""},
-    {"src": "integration_qc", "dst": "optimization",  "route": "down", "label": ""},
-    {"src": "optimization",   "dst": "packaging",     "route": "down", "label": ""},
+    {"src": "integration_qc", "dst": "packaging",     "route": "down", "label": ""},
     {"src": "packaging",      "dst": "games_done",    "route": "down", "label": ""},
 
     # CERTIFICATION
@@ -141,15 +139,15 @@ EDGES = [
 
     # Cross-space (automated / hand-off moves)
     {"src": "games_done", "dst": "cert_todo", "route": "wp", "label": "",
-     "points": [(1032, _row(7)), (1105, _row(7)), (1105, _row(0)), (1178, _row(0))], "label_xy": (1116, _row(1))},
+     "points": [(1032, _row(6)), (1105, _row(6)), (1105, _row(0)), (1178, _row(0))], "label_xy": (1116, _row(1))},
     {"src": "games_done", "dst": "loc_todo", "route": "wp", "label": "",
-     "points": [(1032, _row(7)), (1130, _row(7)), (1130, _row(4)), (1178, _row(4))], "label_xy": (1141, _row(6))},
+     "points": [(1032, _row(6)), (1130, _row(6)), (1130, _row(4)), (1178, _row(4))], "label_xy": (1141, _row(6))},
     {"src": "cert_done",  "dst": "rel_requested", "route": "wp", "label": "",
      "points": [(1462, _row(2)), (1510, _row(2)), (1510, _row(0)), (1608, _row(0))]},
     {"src": "loc_done",   "dst": "rel_requested", "route": "wp", "label": "",
      "points": [(1462, _row(6)), (1550, _row(6)), (1550, _row(0) + 15), (1608, _row(0) + 15)]},
     {"src": "games_done", "dst": "rel_requested", "route": "wp", "label": "",
-     "points": [(890, _row(7) + 21), (1960, _row(7) + 21), (1960, _row(0)), (1892, _row(0))]},
+     "points": [(890, _row(6) + 21), (1960, _row(6) + 21), (1960, _row(0)), (1892, _row(0))]},
 ]
 
 # ── Vertical compaction ─────────────────────────────────────────────────────────
