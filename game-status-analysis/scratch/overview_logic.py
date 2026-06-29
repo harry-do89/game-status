@@ -6,9 +6,11 @@ report_logic.py). The generator feeds these a list of GAME ticket dicts + the
 changelog actuals map, and gets back a single `overview` dict ready to embed as
 JSON and render client-side.
 
-SINGLE SOURCE OF TRUTH for the production schedule: GAME_STAGES / STAGE_DURATIONS /
-RISK_DAYS live here. shared/timeline_modal.py mirrors GAME_STAGES + STAGE_DURATIONS in
-JS (TL_STAGES / TL_DURATIONS) for the per-ticket modal's estimate fallback; keep in sync.
+SINGLE SOURCE OF TRUTH for the overview's status-driven schedule: GAME_STAGES (the real
+GAME board statuses) / STAGE_DURATIONS / RISK_DAYS live here. Note this is NOT the same
+list the per-ticket timeline modal uses — that modal's estimate fallback (TL_STAGES /
+TL_DURATIONS in shared/timeline_modal.py) is keyed by the planning-field stages
+(Math…Optimization), which are custom date fields rather than board statuses.
 """
 
 from __future__ import annotations
@@ -16,18 +18,25 @@ from __future__ import annotations
 import datetime as _dt
 
 # ── Production schedule constants ──────────────────────────────────────────────
-# Ordered game-production pipeline. "Done" is terminal (not an active stage).
+# Ordered game-production pipeline — these are the **real GAME Jira board statuses**
+# (cross-check graph_layout.py / GET /rest/api/3/project/GAME/statuses). "Done" is
+# terminal (not an active stage). classify_game / pipeline_health bucket each ticket
+# by its current status, so every name here MUST be an actual GAME status — otherwise
+# its row is permanently empty and tickets in an unlisted status vanish from the chart.
+# (The per-ticket timeline modal uses a *different* list — the planning-field stages
+# Math…Optimization defined in server.py / shared/timeline_modal.py — because those are
+# custom date fields, not board statuses; "Optimization" is such a field, not a status.)
 GAME_STAGES = [
-    "Planned", "Math", "Contract Alignment", "Development",
-    "Integration QC", "Optimization", "Packaging", "Done",
+    "To Do", "Math", "Contract Alignment", "Development",
+    "Integration QC", "Packaging", "Done",
 ]
 ACTIVE_STAGES = [s for s in GAME_STAGES if s != "Done"]
 
 # Planned working duration of each stage, in days. Plan dates are derived
 # cumulatively from a ticket's Created Date over this map.
 STAGE_DURATIONS = {
-    "Planned": 4, "Math": 5, "Contract Alignment": 3, "Development": 20,
-    "Integration QC": 10, "Optimization": 5, "Packaging": 4, "Done": 1,
+    "To Do": 4, "Math": 5, "Contract Alignment": 3, "Development": 20,
+    "Integration QC": 10, "Packaging": 4, "Done": 1,
 }
 
 # A game whose current stage is planned to end within this many days is "at risk".
@@ -96,12 +105,12 @@ def classify_game(row, actuals, today):
 
     plan = build_plan_dates(row.get("created"))
     ps, pe = plan[status]
-    is_first = status == ACTIVE_STAGES[0]  # "Planned" — production hasn't started
+    is_first = status == ACTIVE_STAGES[0]  # "To Do" — production hasn't started
 
     # When did the ticket actually enter its current stage?
     entered = _date((actuals.get(status) or {}).get("entered"))
     if entered is None and is_first:
-        entered = _date(row.get("created"))  # created straight into Planned
+        entered = _date(row.get("created"))  # created straight into To Do
 
     # 1) Past the planned end of the current stage → LATE.
     if today > pe:

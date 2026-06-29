@@ -389,8 +389,10 @@ def ticket_timeline(key):
         return jsonify({"key": key, "stages": [], "estimated": True, "error": "Jira creds not configured"})
 
     try:
-        # GAME and CER tickets share the same per-stage custom fields
-        # (ETA/Actual Start/Actual End per stage), so both use the field-driven path.
+        # GAME, CER and LOC tickets share the same per-stage custom fields
+        # (ETA/Actual Start/Actual End per stage), so all three use the field-driven
+        # path. Only GAME parents have Development team children (sub-rows below);
+        # CER/LOC simply return no sub-rows.
         stage_fields = _ticket_timeline_fields(domain, email, token, key)
 
         # Development sub-stages from the extractor's per-parent file.

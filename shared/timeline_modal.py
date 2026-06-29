@@ -15,8 +15,9 @@ must contain no braces). The page then exposes a single public function:
 
 which fetches GET /api/ticket/<key>/timeline (served by game-status-analysis/server.py,
 mounted at root in the shared Flask process) and renders the per-stage Gantt.
-On a non-GAME key or any fetch error it falls back to a planned-duration
-estimate so the modal never breaks.
+GAME, CER and LOC keys all fetch the real field-driven timeline (they share the
+same per-stage custom fields); on any other space or a fetch error it falls back
+to a planned-duration estimate so the modal never breaks.
 
 Bar model (per row): a blue *Actual duration* bar, extended by a green *Time
 saved* segment when a stage finished before its ETA (Jira due date), or an orange
@@ -296,7 +297,10 @@ TIMELINE_JS = r"""
     };
 
     const _k = String(key);
-    if (!_k.startsWith('GAME-') && !_k.startsWith('CER-')) { estimate(); return; }
+    // GAME, CER and LOC issues all carry the same per-stage custom fields
+    // (ETA/Actual Start/Actual End per stage), so all three fetch the real
+    // field-driven timeline; other spaces fall back to the planned estimate.
+    if (!_k.startsWith('GAME-') && !_k.startsWith('CER-') && !_k.startsWith('LOC-')) { estimate(); return; }
 
     // The timeline endpoint lives on the game-status blueprint, mounted at root
     // both standalone and inside the Flask shell.

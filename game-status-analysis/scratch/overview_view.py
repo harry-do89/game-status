@@ -101,8 +101,17 @@ OVERVIEW_CSS = """\
   .pl-name { font-size: 0.8rem; color: var(--ink); white-space: nowrap; overflow: hidden;
              text-overflow: ellipsis; }
   .pl-track { height: 7px; background: #20252e; border-radius: 6px; overflow: hidden; }
-  .pl-fill { height: 100%; border-radius: 6px; transition: width .5s cubic-bezier(.2,.7,.3,1); }
+  /* Stacked fill: late (red) + risk (orange) + ontrack (green) segments, sized to
+     each bucket's share of the stage's total count — so risk is always visible,
+     not just hidden behind a single priority-colored bar. */
+  .pl-fillwrap { display: flex; height: 100%; border-radius: 6px; overflow: hidden;
+                 transition: width .5s cubic-bezier(.2,.7,.3,1); }
+  .pl-seg { height: 100%; }
+  .pl-seg.late     { background: var(--late); }
+  .pl-seg.risk     { background: var(--risk); }
+  .pl-seg.ontrack  { background: var(--ontrack); }
   .pl-cnt { font-size: 0.84rem; text-align: right; color: var(--ink); }
+  .pl-badges { display: flex; gap: 6px; }
   .pl-badge { font-size: 0.66rem; font-weight: 700; padding: 2px 7px; border-radius: 6px;
               white-space: nowrap; }
   .pl-badge.late { background: rgba(239,68,68,.16); color: #f7a3a1; }
@@ -311,15 +320,22 @@ OVERVIEW_JS = """\
     const rows = OV.pipeline;
     const max = Math.max(1, ...rows.map(r => r.count));
     document.getElementById('ov-pipeline').innerHTML = rows.map(r => {
-      const color = r.late ? OV_COLOR.late : (r.risk ? OV_COLOR.risk : '#3a434f');
       const w = (r.count / max * 100).toFixed(0);
-      let badge = '<span class="pl-badge zero"></span>';
-      if(r.late) badge = '<span class="pl-badge late">'+r.late+' late</span>';
-      else if(r.risk) badge = '<span class="pl-badge risk">'+r.risk+' at risk</span>';
+      const ontrack = Math.max(r.count - r.late - r.risk, 0);
+      const segs = r.count ? (
+        '<span class="pl-seg late" style="width:'+(r.late/r.count*100).toFixed(0)+'%"></span>'+
+        '<span class="pl-seg risk" style="width:'+(r.risk/r.count*100).toFixed(0)+'%"></span>'+
+        '<span class="pl-seg ontrack" style="width:'+(ontrack/r.count*100).toFixed(0)+'%"></span>'
+      ) : '';
+      let badges = '';
+      if(r.late) badges += '<span class="pl-badge late">'+r.late+' late</span>';
+      if(r.risk) badges += '<span class="pl-badge risk">'+r.risk+' at risk</span>';
+      if(!badges) badges = '<span class="pl-badge zero"></span>';
       return '<div class="pl-row">'+
         '<span class="pl-name">'+esc(r.stage)+'</span>'+
-        '<span class="pl-track"><span class="pl-fill" style="width:'+(r.count?w:0)+'%;background:'+color+'"></span></span>'+
-        '<span class="pl-cnt ov-num">'+r.count+'</span>'+ badge +'</div>';
+        '<span class="pl-track"><span class="pl-fillwrap" style="width:'+w+'%">'+segs+'</span></span>'+
+        '<span class="pl-cnt ov-num">'+r.count+'</span>'+
+        '<span class="pl-badges">'+badges+'</span></div>';
     }).join('');
   }
 

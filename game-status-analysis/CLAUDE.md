@@ -112,22 +112,28 @@ This board also exposes a per-ticket timeline route:
 
 It powers the shared modal injected from `../shared/timeline_modal.py`.
 
-### CER tickets
+### CER & LOC tickets
 
-CER (Certification) tickets carry the **same per-stage custom fields** as GAME
-(`ETA (Math)` / `Actual Start (Math)` / … through Optimization), so the timeline route
-treats them identically to GAME — the same field-driven `_ticket_timeline_fields` path.
-The shared modal fetches `/api/ticket/<key>/timeline` for both `GAME-` and `CER-` keys;
-all other spaces still fall back to an estimated placeholder. (CER tickets have no
-MT/PF/RNG team children, so they show no Development sub-rows.)
+CER (Certification) **and** LOC (Localization) tickets carry the **same per-stage
+custom fields** as GAME (`ETA (Math)` / `Actual Start (Math)` / … through Optimization,
+plus `Due date`) — wired onto both projects' create/edit screens by the Jira admin, so
+the timeline route treats them identically to GAME via the same field-driven
+`_ticket_timeline_fields` path. The shared modal fetches `/api/ticket/<key>/timeline`
+for `GAME-`, `CER-` and `LOC-` keys; all other spaces still fall back to an estimated
+placeholder. (CER/LOC tickets have no MT/PF/RNG team children, so they show no
+Development sub-rows.)
 
-### Source of truth for timeline rows (GAME & CER)
+Note: these stage fields may be empty on older migrated CER tickets — the route then
+returns `estimated: true` and the modal shows the planned-duration placeholder until the
+team fills the fields in Jira. The same field ids apply to LOC (currently 0 live tickets).
 
-Top-level GAME timeline rows are **field-driven**, not changelog-driven.
+### Source of truth for timeline rows (GAME, CER & LOC)
+
+Top-level timeline rows (GAME/CER/LOC) are **field-driven**, not changelog-driven.
 
 - The server resolves Jira field display names to `customfield_xxx` ids at runtime
   through `GET /rest/api/3/field`.
-- It then fetches the GAME issue itself and reads these fields per stage:
+- It then fetches the issue itself and reads these fields per stage:
   - `ETA (Math)`, `Actual Start (Math)`, `Actual End (Math)`
   - `ETA (Contract Alignment)`, `Actual Start (Contract Alignment)`, `Actual End (Contract Alignment)`
   - `ETA (Development)`, `Actual Start (Development)`, `Actual End (Development)`
