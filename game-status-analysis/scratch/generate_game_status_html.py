@@ -692,6 +692,10 @@ _PAGE = r"""<!DOCTYPE html>
     <button class="flt-multi-btn" id="flt-gametype-btn">All Game Categories <span class="flt-arrow">▾</span></button>
     <div class="flt-multi-dropdown" id="flt-gametype-dropdown"></div>
   </div>
+  <div class="flt-multi-wrap" id="flt-studio-wrap">
+    <button class="flt-multi-btn" id="flt-studio-btn">All Studios <span class="flt-arrow">▾</span></button>
+    <div class="flt-multi-dropdown" id="flt-studio-dropdown"></div>
+  </div>
   <div class="flt-multi-wrap" id="flt-wishful-wrap">
     <button class="flt-multi-btn" id="flt-wishful-btn">All Months <span class="flt-arrow">▾</span></button>
     <div class="flt-multi-dropdown" id="flt-wishful-dropdown"></div>
@@ -1108,6 +1112,7 @@ _PAGE = r"""<!DOCTYPE html>
     { id:'market',   label:'Markets',     field:'market'      },
     { id:'batch',    label:'Batches',     field:'batch'       },
     { id:'gametype', label:'Game Categories', field:'game_category' },
+    { id:'studio',   label:'Studios',      field:'game_studio' },
     { id:'wishful',  label:'Months',      field:'wishful_date',
       matchFn: (t, sel) => sel.has((t.wishful_date||'').substring(0,7)),
       fmt: v => { const [y,m]=v.split('-'); return new Date(+y,+m-1,1).toLocaleString('en',{month:'short',year:'numeric'}); }
@@ -1227,7 +1232,7 @@ _PAGE = r"""<!DOCTYPE html>
   // Collect values per filter from embedded ticket data, then build dropdowns
   (function initFilters(){
     const PRI_ORDER = ['Highest','High','Medium','Low','Lowest'];
-    const collected = { priority:[], market:new Set(), batch:new Set(), gametype:new Set(), wishful:new Set() };
+    const collected = { priority:[], market:new Set(), batch:new Set(), gametype:new Set(), studio:new Set(), wishful:new Set() };
     const priSeen = new Set();
     for(const list of Object.values(DATA.tickets)){
       for(const t of list){
@@ -1235,6 +1240,7 @@ _PAGE = r"""<!DOCTYPE html>
         if(t.market)       collected.market.add(t.market);
         if(t.batch)        collected.batch.add(t.batch);
         if(t.game_category) collected.gametype.add(t.game_category);
+        if(t.game_studio)  collected.studio.add(t.game_studio);
         if(t.wishful_date && t.wishful_date.length>=7) collected.wishful.add(t.wishful_date.substring(0,7));
       }
     }
@@ -1245,6 +1251,7 @@ _PAGE = r"""<!DOCTYPE html>
       market:   [...collected.market].sort(),
       batch:    [...collected.batch].sort(),
       gametype: [...collected.gametype].sort(),
+      studio:   [...collected.studio].sort(),
       wishful:  [...collected.wishful].sort(),
     };
 
