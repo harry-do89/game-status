@@ -391,8 +391,7 @@ def ticket_timeline(key):
     try:
         # GAME, CER and LOC tickets share the same per-stage custom fields
         # (ETA/Actual Start/Actual End per stage), so all three use the field-driven
-        # path. Only GAME parents have Development team children (sub-rows below);
-        # CER/LOC simply return no sub-rows.
+        # path. GAME/CER parents can also have cached Development child rows below.
         stage_fields = _ticket_timeline_fields(domain, email, token, key)
 
         # Development sub-stages from the extractor's per-parent file.

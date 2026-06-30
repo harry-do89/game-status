@@ -23,7 +23,7 @@ Bar model (per row): a blue *Actual duration* bar, extended by a green *Time
 saved* segment when a stage finished before its ETA (Jira due date), or an orange
 *Overrun past ETA* segment when it finished after. Future stages show a dashed
 *Not started* track. Development's sub-stages (BE/BO/Platform/FE/Math) render
-indented inside a highlighted group panel.
+indented inside a highlighted group panel for GAME/CER tickets that have child rows.
 """
 
 CSS_SENTINEL = "/*__TIMELINE_CSS__*/"

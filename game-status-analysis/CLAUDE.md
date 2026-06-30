@@ -120,8 +120,8 @@ plus `Due date`) — wired onto both projects' create/edit screens by the Jira a
 the timeline route treats them identically to GAME via the same field-driven
 `_ticket_timeline_fields` path. The shared modal fetches `/api/ticket/<key>/timeline`
 for `GAME-`, `CER-` and `LOC-` keys; all other spaces still fall back to an estimated
-placeholder. (CER/LOC tickets have no MT/PF/RNG team children, so they show no
-Development sub-rows.)
+placeholder. CER tickets can also show Development sub-rows when the extractor cache
+has child issue rows for that parent; LOC currently has no child-row fetch.
 
 Note: these stage fields may be empty on older migrated CER tickets — the route then
 returns `estimated: true` and the modal shows the planned-duration placeholder until the
@@ -150,11 +150,11 @@ Indented Development children (one row per team, e.g. `Math`/`Platform`/`BE`/`BO
 come from the extractor cache file `result/game_status_substages.json`.
 
 - Per-team work lives in **child issues** — the Jira "Work" panel, i.e. issues whose
-  `parent` is the GAME ticket — in separate team projects (`MT`/`PF`/`RNG`/`BO`/`DEVOPS`/…).
-  `script/game_status_extractor.py` queries each GAME parent's children via JQL
+  `parent` is the GAME or CER ticket — in separate team projects (`MT`/`PF`/`RNG`/`BO`/`DEVOPS`/…).
+  `script/game_status_extractor.py` queries each GAME/CER parent's children via JQL
   `parent = "<key>"`, labels each child by its **project-key prefix** (`MT`→Math,
   `PF`→Platform, …) via the `[substage_teams]` table in `config.toml`; an unlisted
-  prefix is skipped (so a GAME parent can have multiple rows for one team, e.g. two
+  prefix is skipped (so a parent can have multiple rows for one team, e.g. two
   `RNG` children both → BE).
 - Each row is built from **three dates** so the modal can score late / early / on-time:
   - `entered` (actual start) = the child's **Start date**. **No Start date → row omitted.**

@@ -64,6 +64,7 @@ GAME_STAGES = [
 TEAM_PREFIX_MAP = _cfg.get("substage_teams") or {
     "MT": "Math", "PF": "Platform", "BO": "BO", "RNG": "BE", "DEVOPS": "Devops",
 }
+SUBSTAGE_PARENT_SPACES = ("GAME", "CER")
 
 
 def team_for_key(key: str) -> str:
@@ -215,13 +216,13 @@ class JiraClient:
         return self._start_field_id
 
     def fetch_substages(self, parents: list) -> dict:
-        """Return {parent_key: [{label, entered, exited, eta}]} for GAME team children.
+        """Return {parent_key: [{label, entered, exited, eta}]} for team children.
 
-        Each GAME parent's per-team work lives in **child issues** (the Jira "Work"
-        panel — issues whose `parent` is the GAME ticket), in separate team projects
-        (MT, PF, RNG, BO, DEVOPS, …). For each child whose project-key prefix is a
-        known team (MT→Math, PF→Platform, …) we read three dates so the modal can
-        score late / early / on-time:
+        Each GAME/CER parent's per-team work lives in **child issues** (the Jira
+        "Work" panel — issues whose `parent` is the parent ticket), in separate
+        team projects (MT, PF, RNG, BO, DEVOPS, …). For each child whose
+        project-key prefix is a known team (MT→Math, PF→Platform, …) we read
+        three dates so the modal can score late / early / on-time:
           entered (actual start) = the child's Start date. No Start date → skipped.
           eta (deadline)         = the child's Due date.
           exited (actual end)    = the child's resolution date when Done, else
@@ -459,28 +460,30 @@ def process_game_status_data(since_date: str = None):
                 "Due Date":        due_date,
             })
 
-    df_new = pd.DataFrame(records)
-
-    # GAME tickets touched by this run — the only keys whose changelog we refetch.
-    touched_game_keys = (
-        df_new[df_new["Space"] == "GAME"]["Ticket"].tolist() if not df_new.empty else []
-    )
-    # Parent (non-subtask) GAME issue objects for those keys — carry the full
-    # `subtasks` list the sub-stage fetch needs.
-    _touched = set(touched_game_keys)
-    touched_game_issues = [
-        issue for issue in all_raw.get("GAME", [])
-        if issue["key"] in _touched
-        and not ((issue.get("fields", {}).get("issuetype") or {}).get("subtask", False))
-    ]
-
     # --- SHORT-CIRCUIT: incremental fetch returned nothing new ---
+    df_new = pd.DataFrame(records)
     if df_new.empty:
         if since_date and os.path.exists(EXPORT_PATH):
             print(f"No updated tickets since {since_date}. Returning existing CSV unchanged.")
             return pd.read_csv(EXPORT_PATH), [], []
         print("No tickets retrieved.")
         return df_new, [], []
+
+    # GAME tickets touched by this run — the only keys whose changelog we refetch.
+    touched_game_keys = df_new[df_new["Space"] == "GAME"]["Ticket"].tolist()
+
+    # Parent (non-subtask) GAME/CER issue objects for those keys — used to fetch
+    # Development child rows for the per-ticket timeline modal.
+    touched_substage_keys = set(
+        df_new[df_new["Space"].isin(SUBSTAGE_PARENT_SPACES)]["Ticket"].tolist()
+    )
+    touched_substage_parent_issues = [
+        issue
+        for project in SUBSTAGE_PARENT_SPACES
+        for issue in all_raw.get(project, [])
+        if issue["key"] in touched_substage_keys
+        and not ((issue.get("fields", {}).get("issuetype") or {}).get("subtask", False))
+    ]
 
     # --- MERGE: upsert into existing CSV for incremental mode ---
     if since_date and os.path.exists(EXPORT_PATH):
@@ -492,7 +495,7 @@ def process_game_status_data(since_date: str = None):
     else:
         df = df_new
 
-    return df, touched_game_keys, touched_game_issues
+    return df, touched_game_keys, touched_substage_parent_issues
 
 
 # ---------------------------------------------------------
@@ -502,7 +505,7 @@ if __name__ == "__main__":
     os.makedirs("result", exist_ok=True)
 
     since = os.environ.get("SINCE_DATE")
-    df, touched_game_keys, touched_game_issues = process_game_status_data(since_date=since)
+    df, touched_game_keys, touched_substage_parent_issues = process_game_status_data(since_date=since)
 
     if not df.empty:
         print("\n===========================================")
@@ -548,23 +551,27 @@ if __name__ == "__main__":
     except Exception as exc:
         print(f"⚠ Could not write stage actuals: {exc}")
 
-    # --- Development sub-stage timeline from GAME sub-tasks (best-effort) ---
-    # Refetch only the GAME parents touched by this run; merge per-parent over any
-    # existing file so incremental refreshes stay cheap.
+    # --- Development sub-stage timeline from GAME/CER child issues (best-effort) ---
+    # Refetch only the parent tickets touched by this run; merge per-parent over
+    # any existing file so incremental refreshes stay cheap.
     try:
-        if touched_game_issues:
+        if touched_substage_parent_issues:
             existing = {}
             if since and os.path.exists(SUBSTAGE_PATH):
                 with open(SUBSTAGE_PATH, encoding="utf-8") as f:
                     existing = json.load(f)
-            print(f"\nFetching sub-stages for {len(touched_game_issues)} GAME parent(s)...", flush=True)
+            print(
+                f"\nFetching sub-stages for {len(touched_substage_parent_issues)} "
+                "GAME/CER parent(s)...",
+                flush=True,
+            )
             client = JiraClient(DOMAIN, EMAIL, API_TOKEN)
-            fresh = client.fetch_substages(touched_game_issues)
+            fresh = client.fetch_substages(touched_substage_parent_issues)
             existing.update(fresh)
             with open(SUBSTAGE_PATH, "w", encoding="utf-8") as f:
                 json.dump(existing, f, ensure_ascii=False, indent=2)
-            print(f"Wrote sub-stages for {len(existing)} GAME parent(s) to {SUBSTAGE_PATH}")
+            print(f"Wrote sub-stages for {len(existing)} GAME/CER parent(s) to {SUBSTAGE_PATH}")
         else:
-            print("No GAME parents touched — leaving sub-stages unchanged.")
+            print("No GAME/CER parents touched — leaving sub-stages unchanged.")
     except Exception as exc:
         print(f"⚠ Could not write sub-stages: {exc}")

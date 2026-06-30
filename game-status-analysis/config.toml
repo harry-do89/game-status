@@ -15,7 +15,7 @@ default_limit = 10
 # "GAME:Development" = 15
 
 [substage_teams]
-# Map a GAME sub-task's project-key prefix → the team label shown under the
+# Map a GAME/CER child issue's project-key prefix → the team label shown under the
 # Development row in the per-ticket timeline modal. A sub-task whose prefix is
 # not listed here is skipped. Add new team prefixes as needed.
 MT     = "Math"
