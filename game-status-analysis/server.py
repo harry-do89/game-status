@@ -193,6 +193,20 @@ GAME_STAGES = [
 TIMELINE_VISIBLE_STAGES = [s for s in GAME_STAGES if s not in {"Planned", "Done"}]
 SUBSTAGE_PATH = BASE_DIR / "result" / "game_status_substages.json"
 
+def _development_substage_name(row):
+    """Display Development child rows as "[PROJECT] - child issue title" when available."""
+    if not isinstance(row, dict):
+        return str(row or "").strip()
+    label = str(row.get("name") or row.get("label") or "").strip()
+    if label.startswith("[") and "] -" in label:
+        return label
+    key = str(row.get("key") or "").strip()
+    prefix = str(row.get("prefix") or (key.split("-")[0] if "-" in key else "")).strip()
+    summary = str(row.get("summary") or "").strip()
+    if prefix and summary:
+        return f"[{prefix}] - {summary}"
+    return label
+
 TIMELINE_FIELD_NAMES = {
     "Math": {
         "eta": "ETA (Math)",
@@ -412,7 +426,7 @@ def ticket_timeline(key):
             if s == "Development":
                 for sr in sub_rows:
                     stages.append({
-                        "name": sr.get("label", ""), "level": 1, "parent": "Development",
+                        "name": _development_substage_name(sr), "level": 1, "parent": "Development",
                         "actual_start": sr.get("entered"),
                         "actual_end": sr.get("exited"),
                         "eta": sr.get("eta"),

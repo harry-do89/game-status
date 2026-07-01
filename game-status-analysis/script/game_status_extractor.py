@@ -19,6 +19,8 @@ import time
 import os
 import sys
 import json
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from requests.auth import HTTPBasicAuth
 
@@ -57,20 +59,18 @@ GAME_STAGES = [
     "Integration QC", "Optimization", "Packaging", "Done",
 ]
 
-# Development sub-task team labels, keyed by the sub-task's project-key prefix
-# (e.g. MT-44 → "Math"). Loaded from config.toml [substage_teams]; the default
-# below is the fallback when that table is absent. A sub-task whose prefix is not
-# listed here is skipped.
-TEAM_PREFIX_MAP = _cfg.get("substage_teams") or {
-    "MT": "Math", "PF": "Platform", "BO": "BO", "RNG": "BE", "DEVOPS": "Devops",
+# Development sub-task project prefixes allowed under the timeline's Development row.
+# Display names are derived from each child issue itself: "[PREFIX] - Summary".
+SUBSTAGE_PREFIXES = set((_cfg.get("substage_teams") or {}).keys()) or {
+    "MT", "PF", "BO", "RNG", "DEVOPS",
 }
 SUBSTAGE_PARENT_SPACES = ("GAME", "CER")
 
 
-def team_for_key(key: str) -> str:
-    """Return the team label for a sub-task key by its project prefix, or ""."""
+def substage_prefix_for_key(key: str) -> str:
+    """Return a whitelisted sub-task project prefix, or ""."""
     prefix = (key or "").split("-")[0]
-    return TEAM_PREFIX_MAP.get(prefix, "")
+    return prefix if prefix in SUBSTAGE_PREFIXES else ""
 
 
 # ---------------------------------------------------------
@@ -120,22 +120,25 @@ class JiraClient:
         print(f"  Fetch complete: {len(issues)} issues", flush=True)
         return issues
 
-    def get_project_tickets(self, project_key: str, since_date: str = None) -> list:
+    def get_project_tickets(self, project_key: str, since_date: str = None, extra_fields: list = None) -> list:
         jql = f'project = "{project_key}"'
         if since_date:
             jql += f' AND updated >= "{since_date}"'
         jql += " ORDER BY created DESC"
         fields = [
             "summary", "status", "assignee", "created", "updated",
-            "priority", "issuetype", "parent", "issuelinks", "subtasks",
+            "priority", "issuetype", "parent", "issuelinks",
             "customfield_10664",   # Game Type (Project/Game Type)
             "customfield_10728",   # Wishful date
             "customfield_10862",   # Market
             "customfield_10866",   # Batch
             "customfield_10825",   # Game Studio
             "customfield_11023",   # Game Category
+            "customfield_11025",   # Rank
             "duedate",             # Due Date
         ]
+        if extra_fields:
+            fields.extend(extra_fields)
         return self._jql_search(jql, fields)
 
     def fetch_changelog_actuals(self, keys: list) -> dict:
@@ -144,49 +147,61 @@ class JiraClient:
         Mirrors server.py's /api/ticket/<key>/changelog parsing, but in bulk at
         extract time so the overview can classify every GAME ticket without a live
         call. Best-effort: a per-ticket failure is logged and skipped.
+        Fetches up to 8 tickets concurrently to cut serial wait time.
         """
-        actuals = {}
-        for i, key in enumerate(keys):
-            try:
-                events, start_at = [], 0
-                while True:
-                    url = f"{self.base_url}/issue/{key}/changelog"
-                    r = requests.get(
-                        url, auth=self.auth, headers=self.headers,
-                        params={"startAt": start_at, "maxResults": 100}, timeout=30,
-                    )
-                    if r.status_code != 200:
-                        print(f"  ⚠ changelog {key}: HTTP {r.status_code}", flush=True)
-                        break
-                    data = r.json()
-                    for entry in data.get("values", []):
-                        ts = entry.get("created", "")
-                        for item in entry.get("items", []):
-                            if item.get("field") == "status":
-                                events.append({
-                                    "created": ts,
-                                    "from": item.get("fromString", ""),
-                                    "to":   item.get("toString", ""),
-                                })
-                    if data.get("isLast", True):
-                        break
-                    start_at += len(data.get("values", [])) or 100
+        sem = threading.Semaphore(8)
+        total = len(keys)
 
-                events.sort(key=lambda e: e["created"])
-                stage_times: dict = {}
-                for ev in events:
-                    frm, to, ts = ev["from"], ev["to"], ev["created"]
-                    if to in GAME_STAGES:
-                        stage_times.setdefault(to, {})["entered"] = ts
-                    if frm in GAME_STAGES and "exited" not in stage_times.get(frm, {}):
-                        stage_times.setdefault(frm, {})["exited"] = ts
+        def _fetch_one(key):
+            with sem:
+                try:
+                    events, start_at = [], 0
+                    while True:
+                        url = f"{self.base_url}/issue/{key}/changelog"
+                        r = requests.get(
+                            url, auth=self.auth, headers=self.headers,
+                            params={"startAt": start_at, "maxResults": 100}, timeout=30,
+                        )
+                        if r.status_code != 200:
+                            print(f"  ⚠ changelog {key}: HTTP {r.status_code}", flush=True)
+                            break
+                        data = r.json()
+                        for entry in data.get("values", []):
+                            ts = entry.get("created", "")
+                            for item in entry.get("items", []):
+                                if item.get("field") == "status":
+                                    events.append({
+                                        "created": ts,
+                                        "from": item.get("fromString", ""),
+                                        "to":   item.get("toString", ""),
+                                    })
+                        if data.get("isLast", True):
+                            break
+                        start_at += len(data.get("values", [])) or 100
+                    time.sleep(0.1)
+
+                    events.sort(key=lambda e: e["created"])
+                    stage_times: dict = {}
+                    for ev in events:
+                        frm, to, ts = ev["from"], ev["to"], ev["created"]
+                        if to in GAME_STAGES:
+                            stage_times.setdefault(to, {})["entered"] = ts
+                        if frm in GAME_STAGES and "exited" not in stage_times.get(frm, {}):
+                            stage_times.setdefault(frm, {})["exited"] = ts
+                    return key, stage_times
+                except Exception as exc:
+                    print(f"  ⚠ changelog fetch failed for {key}: {exc}", flush=True)
+                    return key, {}
+
+        actuals = {}
+        done = 0
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            for key, stage_times in ex.map(_fetch_one, keys):
                 if stage_times:
                     actuals[key] = stage_times
-            except Exception as exc:
-                print(f"  ⚠ changelog fetch failed for {key}: {exc}", flush=True)
-            if (i + 1) % 10 == 0:
-                print(f"    (changelog {i + 1}/{len(keys)})", flush=True)
-            time.sleep(0.5)
+                done += 1
+                if done % 10 == 0:
+                    print(f"    (changelog {done}/{total})", flush=True)
         return actuals
 
     def start_date_field_id(self):
@@ -220,8 +235,9 @@ class JiraClient:
 
         Each GAME/CER parent's per-team work lives in **child issues** (the Jira
         "Work" panel — issues whose `parent` is the parent ticket), in separate
-        team projects (MT, PF, RNG, BO, DEVOPS, …). For each child whose
-        project-key prefix is a known team (MT→Math, PF→Platform, …) we read
+        team projects (MT, PF, RNG, BO, DEVOPS, …). For each child whose project-key
+        prefix is whitelisted, the timeline label is built from live issue data:
+        "[PREFIX] - child summary". We also read
         three dates so the modal can score late / early / on-time:
           entered (actual start) = the child's Start date. No Start date → skipped.
           eta (deadline)         = the child's Due date.
@@ -232,30 +248,47 @@ class JiraClient:
         """
         start_field = self.start_date_field_id()
         fields = [f for f in ("summary", "duedate", "resolutiondate", start_field) if f]
-        out: dict = {}
-        for p in parents:
+        sem = threading.Semaphore(5)
+
+        def _fetch_parent(p):
             pkey = p["key"]
-            try:
-                children = self._jql_search(f'parent = "{pkey}"', fields)
-            except Exception as exc:
-                print(f"  ⚠ substage children fetch failed for {pkey}: {exc}", flush=True)
-                continue
+            with sem:
+                try:
+                    children = self._jql_search(f'parent = "{pkey}"', fields)
+                except Exception as exc:
+                    print(f"  ⚠ substage children fetch failed for {pkey}: {exc}", flush=True)
+                    return pkey, []
+                time.sleep(0.1)
             rows = []
             for child in children:
                 ckey = child.get("key", "")
-                label = team_for_key(ckey)
-                if not label:
-                    continue  # not a known team project → skip
+                prefix = substage_prefix_for_key(ckey)
+                if not prefix:
+                    continue
                 f = child.get("fields", {})
+                summary = str(f.get("summary") or "").strip()
+                label = f"[{prefix}] - {summary or ckey}"
                 start = str((f.get(start_field) if start_field else None) or "")[:10]
                 if not start:
-                    continue  # no Start date → treat as having no timeline
-                due = str(f.get("duedate") or "")[:10] or None          # deadline (ETA)
-                end = str(f.get("resolutiondate") or "")[:10] or None   # actual end; None ⇒ in progress
-                rows.append({"label": label, "entered": start, "exited": end, "eta": due})
-            if rows:
-                out[pkey] = rows
-            time.sleep(0.3)
+                    continue
+                due = str(f.get("duedate") or "")[:10] or None
+                end = str(f.get("resolutiondate") or "")[:10] or None
+                rows.append({
+                    "label": label,
+                    "key": ckey,
+                    "prefix": prefix,
+                    "summary": summary,
+                    "entered": start,
+                    "exited": end,
+                    "eta": due,
+                })
+            return pkey, rows
+
+        out: dict = {}
+        with ThreadPoolExecutor(max_workers=5) as ex:
+            for pkey, rows in ex.map(_fetch_parent, parents):
+                if rows:
+                    out[pkey] = rows
         return out
 
     def fetch_limits(self, projects: list) -> dict:
@@ -279,8 +312,7 @@ class JiraClient:
         except Exception as exc:
             print(f"  ⚠ limits: status-name fetch failed: {exc}", flush=True)
 
-        limits = {}
-        for proj in projects:
+        def _fetch_proj_limits(proj):
             try:
                 br = requests.get(
                     f"{self.host}/rest/agile/1.0/board",
@@ -289,14 +321,14 @@ class JiraClient:
                 )
                 boards = br.json().get("values", []) if br.status_code == 200 else []
                 if not boards:
-                    continue
+                    return proj, {}
                 bid = boards[0]["id"]
                 cr = requests.get(
                     f"{self.host}/rest/agile/1.0/board/{bid}/configuration",
                     headers=self.headers, auth=self.auth, timeout=30,
                 )
                 if cr.status_code != 200:
-                    continue
+                    return proj, {}
                 cols = cr.json().get("columnConfig", {}).get("columns", [])
                 pmap = {}
                 for c in cols:
@@ -307,11 +339,17 @@ class JiraClient:
                         name = status_names.get(str(s.get("id")))
                         if name:
                             pmap[name] = int(mx)
-                if pmap:
-                    limits[proj] = pmap
                 time.sleep(0.3)
+                return proj, pmap
             except Exception as exc:
                 print(f"  ⚠ limits: fetch failed for {proj}: {exc}", flush=True)
+                return proj, {}
+
+        limits = {}
+        with ThreadPoolExecutor(max_workers=5) as ex:
+            for proj, pmap in ex.map(_fetch_proj_limits, projects):
+                if pmap:
+                    limits[proj] = pmap
         return limits
 
 
@@ -352,16 +390,25 @@ def process_game_status_data(since_date: str = None):
 
     client = JiraClient(DOMAIN, EMAIL, API_TOKEN)
 
-    # ── Phase 1: fetch all spaces ──────────────────────────────────────────────
+    # ── Phase 1: fetch all spaces (parallel) ──────────────────────────────────
     all_raw: dict = {}
-    for project in SPACES:
+
+    def _fetch_space(project):
         print(f"\nFetching space {project}...", flush=True)
-        tickets = client.get_project_tickets(project, since_date=since_date)
-        if getattr(client, "_last_http_error", None):
-            print(f"FATAL: Jira request failed for space {project} — {client._last_http_error}", flush=True)
-            sys.exit(1)
+        # RM needs subtasks to detect GAME children; other spaces do not.
+        extra = ["subtasks"] if project == "RM" else []
+        tickets = client.get_project_tickets(project, since_date=since_date, extra_fields=extra)
         print(f"  Space {project}: {len(tickets)} tickets", flush=True)
-        all_raw[project] = tickets
+        return project, tickets
+
+    with ThreadPoolExecutor(max_workers=len(SPACES)) as ex:
+        futures = {ex.submit(_fetch_space, p): p for p in SPACES}
+        for fut in as_completed(futures):
+            project, tickets = fut.result()
+            if getattr(client, "_last_http_error", None):
+                print(f"FATAL: Jira request failed for space {project} — {client._last_http_error}", flush=True)
+                sys.exit(1)
+            all_raw[project] = tickets
 
     # ── Phase 2: compute which RM tickets have GAME children ──────────────────
     # Check the RM ticket's own `subtasks` list for any key starting with "GAME-".
@@ -429,6 +476,12 @@ def process_game_status_data(since_date: str = None):
             cat_raw = f.get("customfield_11023") or {}
             game_category = cat_raw.get("value", "") if isinstance(cat_raw, dict) else str(cat_raw or "")
 
+            rank_raw = f.get("customfield_11025") or ""
+            if isinstance(rank_raw, dict):
+                rank = rank_raw.get("value", "") or rank_raw.get("name", "") or ""
+            else:
+                rank = str(rank_raw or "")
+
             cloned_forward = forward_clone_key(f.get("issuelinks"), project)
 
             has_game_child = ""
@@ -452,6 +505,7 @@ def process_game_status_data(since_date: str = None):
                 "Batch":           batch,
                 "Game Studio":     game_studio,
                 "Game Category":   game_category,
+                "Rank":            rank,
                 "Created Date":    f.get("created", ""),
                 "Updated Date":    effective_updated,
                 "URL":             f"{BASE_URL}/browse/{key}",

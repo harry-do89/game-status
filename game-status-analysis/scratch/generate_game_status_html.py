@@ -29,6 +29,7 @@ import graph_layout as G
 from shared import timeline_modal
 from overview_view import OVERVIEW_CSS, OVERVIEW_HTML, OVERVIEW_JS
 from glossary_view import GLOSSARY_HTML
+from control_center import CC_CSS, CC_HTML, CC_JS
 import overview_logic
 
 # Dynamically load status names from Jira statuses mapping file
@@ -157,6 +158,7 @@ def build_node_data():
                 "created": r.get("Created Date", "") or "",
                 "updated": r.get("Updated Date", "") or "",
                 "due_date": r.get("Due Date", "") or "",
+                "rank": r.get("Rank", "") or "",
                 "url": r["URL"],
             }
             for _, r in rows.iterrows()
@@ -468,6 +470,13 @@ def build_overview():
 
 def build_html(node_data):
     svg = build_svg(node_data)
+    chartjs_path = Path(__file__).resolve().parent / "vendor" / "chart.umd.min.js"
+    try:
+        chartjs = chartjs_path.read_text(encoding="utf-8") if chartjs_path.exists() else ""
+    except Exception as exc:
+        print(f"WARNING: failed to read {chartjs_path}: {exc}")
+        chartjs = ""
+    as_of = _load_last_sync() or "latest export"
 
     def _space_label(key):
         sp = next((s for s in G.SPACES if s["key"] == key), None)
@@ -505,6 +514,11 @@ def build_html(node_data):
         .replace("{{OVERVIEW_HTML}}", OVERVIEW_HTML)
         .replace("{{OVERVIEW_JS}}", OVERVIEW_JS)
         .replace("{{GLOSSARY_HTML}}", GLOSSARY_HTML)
+        .replace("{{CC_CSS}}", CC_CSS)
+        .replace("{{CC_HTML}}", CC_HTML)
+        .replace("{{CC_JS}}", CC_JS)
+        .replace("{{CHARTJS}}", chartjs)
+        .replace("{{AS_OF}}", as_of)
     )
     # Inject the shared timeline modal last (its braces must not hit other templating).
     return timeline_modal.render_into(page)
@@ -519,6 +533,7 @@ _PAGE = r"""<!DOCTYPE html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f1f5f9; color: #0f172a; }
@@ -527,6 +542,31 @@ _PAGE = r"""<!DOCTYPE html>
   .node rect { transition: stroke 0.12s, filter 0.12s; }
   .node { cursor: pointer; }
   .node:hover rect { stroke: #2563eb; stroke-width: 2.2; }
+
+  /* ── Flow board: horizontal pipeline (light theme) ─────────────────────── */
+  .pipeline { overflow-x: auto; padding: 4px 2px 10px; }
+  .startbar { display: flex; align-items: flex-end; margin-bottom: 2px; }
+  .startslot { flex: 1 1 0; min-width: 170px; display: flex; flex-direction: column; align-items: center; }
+  .hspacer { flex: 0 0 40px; width: 40px; }
+  .startnode { background: #16a34a; color: #fff; font-weight: 700; font-size: 12px; padding: 7px 16px; border-radius: 20px; box-shadow: 0 4px 12px rgba(22,163,74,.28); }
+  .startline { width: 2px; height: 14px; background: #cbd5e1; }
+  .gsflowrow { display: flex; gap: 0; align-items: stretch; position: relative; }
+  .gsflowsvg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; z-index: 0; }
+  .phase { flex: 1 1 0; min-width: 170px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; position: relative; z-index: 1; }
+  .phhead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 9px; border-bottom: 1px solid #e2e8f0; }
+  .phname { font-weight: 700; font-size: 12.5px; letter-spacing: .3px; }
+  .phtot { font-weight: 700; font-size: 15px; color: #334155; font-variant-numeric: tabular-nums; }
+  .pstage { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 11px; border: 1px solid #e2e8f0; background: #fff; border-radius: 9px; font-size: 12px; cursor: pointer; transition: .12s; color: #0f172a; }
+  .pstage:hover { border-color: #6366f1; background: #eef2ff; }
+  .pstage.zero { color: #94a3b8; }
+  .pcount { font-weight: 700; background: #eef2ff; color: #4f46e5; border: 1px solid #e0e7ff; border-radius: 20px; min-width: 26px; text-align: center; padding: 1px 8px; font-size: 11px; font-variant-numeric: tabular-nums; }
+  .pstage.zero .pcount { background: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; }
+  .hconn { flex: 0 0 40px; width: 40px; }
+  .vconn { display: flex; flex-direction: column; align-items: center; padding: 1px 0; }
+  .vconn .vline { width: 2px; height: 10px; background: #cbd5e1; }
+  .vconn .vchev { width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 7px solid #cbd5e1; }
+  .declined { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: #64748b; background: #fff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 5px 12px; margin-bottom: 12px; }
+  .declined b { color: #dc2626; font-variant-numeric: tabular-nums; }
 
   .empty { padding: 28px 20px; color: #94a3b8; text-align: center; font-size: 0.9rem; }
 
@@ -648,7 +688,9 @@ _PAGE = r"""<!DOCTYPE html>
                padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
 /*__TIMELINE_CSS__*/
 {{OVERVIEW_CSS}}
+{{CC_CSS}}
 </style>
+<script>{{CHARTJS}}</script>
 </head>
 <body>
 <div id="vt-bar">
@@ -673,58 +715,7 @@ _PAGE = r"""<!DOCTYPE html>
 {{OVERVIEW_HTML}}
 
 <div id="view-flow">
-<div class="filter-bar" id="filter-bar">
-  <span class="flt-label">Filters</span>
-  <div class="flt-sep"></div>
-  <div class="flt-multi-wrap" id="flt-priority-wrap">
-    <button class="flt-multi-btn" id="flt-priority-btn">All Priorities <span class="flt-arrow">▾</span></button>
-    <div class="flt-multi-dropdown" id="flt-priority-dropdown"></div>
-  </div>
-  <div class="flt-multi-wrap" id="flt-market-wrap">
-    <button class="flt-multi-btn" id="flt-market-btn">All Markets <span class="flt-arrow">▾</span></button>
-    <div class="flt-multi-dropdown" id="flt-market-dropdown"></div>
-  </div>
-  <div class="flt-multi-wrap" id="flt-batch-wrap">
-    <button class="flt-multi-btn" id="flt-batch-btn">All Batches <span class="flt-arrow">▾</span></button>
-    <div class="flt-multi-dropdown" id="flt-batch-dropdown"></div>
-  </div>
-  <div class="flt-multi-wrap" id="flt-gametype-wrap">
-    <button class="flt-multi-btn" id="flt-gametype-btn">All Game Categories <span class="flt-arrow">▾</span></button>
-    <div class="flt-multi-dropdown" id="flt-gametype-dropdown"></div>
-  </div>
-  <div class="flt-multi-wrap" id="flt-studio-wrap">
-    <button class="flt-multi-btn" id="flt-studio-btn">All Studios <span class="flt-arrow">▾</span></button>
-    <div class="flt-multi-dropdown" id="flt-studio-dropdown"></div>
-  </div>
-  <div class="flt-multi-wrap" id="flt-wishful-wrap">
-    <button class="flt-multi-btn" id="flt-wishful-btn">All Months <span class="flt-arrow">▾</span></button>
-    <div class="flt-multi-dropdown" id="flt-wishful-dropdown"></div>
-  </div>
-  <label class="flt-search">
-    <input id="flt-search-input" type="search" placeholder="Search game by ID or summary">
-  </label>
-  <div class="flt-sep"></div>
-  <button class="btn-clear" id="btn-clear" onclick="clearFilters()" style="display:none">✕ Clear all</button>
-  <span class="flt-badge" id="flt-badge" style="display:none"></span>
-</div>
-
-<div class="canvas-wrap">
-  {{SVG}}
-</div>
-
-<div class="table-wrap" id="table-wrap">
-  <div class="table-card">
-    <div class="tbl-header-row">
-      <div class="inc-tabs" id="tbl-tabs"></div>
-      <div id="sort-indicator">
-        <span class="si-dot"></span>
-        <span id="si-label"></span>
-        <span class="si-clear" onclick="clearSortIndicator()" title="Clear focus">✕</span>
-      </div>
-    </div>
-    <div id="tbl-panels"></div>
-  </div>
-</div>
+{{CC_HTML}}
 </div>
 <!-- /view-flow -->
 
@@ -754,540 +745,7 @@ _PAGE = r"""<!DOCTYPE html>
 
 /*__TIMELINE_JS__*/
 
-  function fmtDate(iso){
-    if(!iso) return '—';
-    return iso.substring(0, 10);
-  }
-  function fmtDuration(iso){
-    if(!iso) return '—';
-    const days = Math.floor((Date.now() - new Date(iso.substring(0,10))) / 86400000);
-    return (days < 1 ? '<1' : days) + 'd';
-  }
-  function fmtDelay(dueDateStr){
-    if(!dueDateStr) return '—';
-    const due = new Date(dueDateStr.substring(0, 10));
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    due.setHours(0,0,0,0);
-    const diff = today - due;
-    const days = Math.floor(diff / 86400000);
-    if(days <= 0) return '—';
-    return days + 'd';
-  }
-  function priClass(p){
-    const m = {'Highest':'highest','High':'high','Medium':'medium','Low':'low','Lowest':'lowest'};
-    return 'pri pri-' + (m[p] || 'default');
-  }
-  const STATUS_RED = new Set(['Integration QC', 'Development']);
-  function statusClass(status, category){
-    if(STATUS_RED.has(status)) return 'stat stat-red';
-    const m = {'To Do':'todo','In Progress':'inprogress','Done':'done'};
-    return 'stat stat-' + (m[category] || 'default');
-  }
-  function dateOnly(iso){ return iso ? iso.substring(0, 10) : ''; }
-  function dateValue(iso){ const v = dateOnly(iso); return v ? Date.parse(v) : -Infinity; }
-  function durationValue(iso){ return iso ? (Date.now() - new Date(dateOnly(iso))) / 86400000 : -Infinity; }
-  function delayValue(dueDateStr){
-    if(!dueDateStr) return -Infinity;
-    const due = new Date(dateOnly(dueDateStr));
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    due.setHours(0,0,0,0);
-    return (today - due) / 86400000;
-  }
-
-  const PRI_RANK = {'Highest':5,'High':4,'Medium':3,'Low':2,'Lowest':1};
-  const SORT_CFG = {
-    key:          { getValue: t => (t.key || '').toLowerCase(),               kind: 'string' },
-    summary:      { getValue: t => (t.summary || '').toLowerCase(),           kind: 'string' },
-    game_category:{ getValue: t => (t.game_category || '').toLowerCase(),     kind: 'string' },
-    priority:     { getValue: t => PRI_RANK[t.priority] || 0,                 kind: 'number' },
-    game_studio:  { getValue: t => (t.game_studio || '').toLowerCase(),       kind: 'string' },
-    market:       { getValue: t => (t.market || '').toLowerCase(),            kind: 'string' },
-    batch:        { getValue: t => (t.batch || '').toLowerCase(),             kind: 'string' },
-    _status:      { getValue: t => (t._status || '').toLowerCase(),           kind: 'string' },
-    duration:     { getValue: t => durationValue(t.created),                  kind: 'number' },
-    created:      { getValue: t => dateValue(t.created),                      kind: 'number' },
-    wishful_date: { getValue: t => dateValue(t.wishful_date),                 kind: 'number' },
-    due_date:     { getValue: t => dateValue(t.due_date),                     kind: 'number' },
-    delay:        { getValue: t => delayValue(t.due_date),                    kind: 'number' },
-    updated:      { getValue: t => dateValue(t.updated),                      kind: 'number' },
-  };
-  const DEFAULT_SORT = { key: 'updated', dir: 'desc' };
-  let currentSort = { ...DEFAULT_SORT };
-  let activeStatusFocus = null;
-
-  // ── Tabbed table below the flow ──────────────────────────────────────────
-  // Build one tab + panel per space; each row carries its Status (the node label).
-  function spaceRows(spaceKey, ticketsByNid){
-    const rows = [];
-    for(const [nid, meta] of Object.entries(DATA.meta)){
-      if(meta.space_key !== spaceKey) continue;
-      for(const t of (ticketsByNid[nid] || [])){
-        rows.push(Object.assign({_status: meta.title}, t));
-      }
-    }
-    return rows;
-  }
-  function byUpdatedDesc(a, b){ return (b.updated||'').localeCompare(a.updated||''); }
-
-  function computeSpaceCounts(ticketsByNid){
-    const counts = {};
-    DATA.spaces.forEach(sp => { counts[sp.key] = 0; });
-    for(const [nid, list] of Object.entries(ticketsByNid)){
-      const meta = DATA.meta[nid];
-      if(!meta) continue;
-      counts[meta.space_key] = (counts[meta.space_key] || 0) + list.length;
-    }
-    return counts;
-  }
-
-  function updateSpaceTotals(ticketsByNid){
-    const counts = computeSpaceCounts(ticketsByNid);
-    DATA.spaces.forEach(sp => {
-      const el = document.querySelector('[data-space-total="'+CSS.escape(sp.key)+'"]');
-      if(el) el.textContent = sp.label + ' - ' + (counts[sp.key] || 0);
-    });
-  }
-
-  function sortArrow(colKey){
-    if(currentSort.key !== colKey) return '<span class="sort-arrow">↕</span>';
-    return '<span class="sort-arrow active">'+(currentSort.dir === 'asc' ? '↑' : '↓')+'</span>';
-  }
-
-  function sortHeader(label, colClass, colKey){
-    return '<th class="'+colClass+' sortable" data-sort-key="'+esc(colKey)+'"><span class="th-wrap"><span>'+esc(label)+'</span>'+sortArrow(colKey)+'</span></th>';
-  }
-
-  function compareRows(a, b){
-    const cfg = SORT_CFG[currentSort.key] || SORT_CFG.updated;
-    const av = cfg.getValue(a);
-    const bv = cfg.getValue(b);
-    let cmp = 0;
-    if(cfg.kind === 'number'){
-      cmp = (av === bv) ? 0 : (av < bv ? -1 : 1);
-    } else {
-      cmp = String(av).localeCompare(String(bv));
-    }
-    if(cmp === 0){
-      cmp = (b.updated || '').localeCompare(a.updated || '');
-      if(cmp === 0) cmp = (a.key || '').localeCompare(b.key || '');
-    }
-    return currentSort.dir === 'asc' ? cmp : -cmp;
-  }
-
-  function getDisplayRows(spaceKey){
-    let rows = [...(SPACE_ROWS[spaceKey] || [])];
-    if(activeStatusFocus && activeStatusFocus.spaceKey === spaceKey){
-      rows = rows.filter(t => t._status === activeStatusFocus.status);
-    }
-    rows.sort(compareRows);
-    return rows;
-  }
-
-  function tableHtml(rows, spaceKey){
-    if(!rows.length) return '<div class="empty">No tickets in this space.</div>';
-    return '<table class="ticket-tbl">'+
-      '<thead><tr>'+
-        sortHeader('ID', 'col-id', 'key')+
-        sortHeader('Summary', 'col-sum', 'summary')+
-        sortHeader('Game Category', 'col-cat', 'game_category')+
-        sortHeader('Priority', 'col-pri', 'priority')+
-        sortHeader('Studio', 'col-std', 'game_studio')+
-        sortHeader('Market', 'col-mkt', 'market')+
-        sortHeader('Batch', 'col-bat', 'batch')+
-        sortHeader('Current Status', 'col-stat', '_status')+
-        sortHeader('Duration', 'col-dur', 'duration')+
-        sortHeader('Create Date', 'col-date', 'created')+
-        sortHeader('Wishful Date', 'col-wish', 'wishful_date')+
-        sortHeader('Due Date', 'col-due', 'due_date')+
-        sortHeader('Delay', 'col-delay', 'delay')+
-        sortHeader('Last Update', 'col-updated', 'updated')+
-      '</tr></thead><tbody>'+
-      rows.map(t => {
-        const delayStr = fmtDelay(t.due_date);
-        const delayStyle = delayStr !== '—' ? ' style="color: #dc2626; font-weight: 600;"' : '';
-        return '<tr'+(activeStatusFocus && activeStatusFocus.spaceKey===spaceKey && t._status===activeStatusFocus.status ? ' class="row-hl"' : '')+'>'+
-        '<td class="col-id"><span onclick="openTimelineModal(\''+esc(t.key)+'\', {summary:\''+esc(t.summary)+'\', studio:\''+esc(t.game_studio)+'\', market:\''+esc(t.market)+'\', batch:\''+esc(t.batch)+'\', category:\''+esc(t.game_category)+'\', wishful:\''+esc(t.wishful_date)+'\', status:\''+esc(t._status)+'\', created:\''+(t.created||'').substring(0,10)+'\'}); event.stopPropagation();" style="cursor:pointer;font-size:14px;opacity:0.6;hover:opacity:1;transition:opacity 0.2s;" title="View timeline">📊</span> <a class="tbl-key" href="'+esc(t.url)+'" target="_blank" rel="noopener">'+esc(t.key)+'</a></td>'+
-        '<td class="col-sum"><span style="display:flex;align-items:center;gap:6px;"><span>'+esc(t.summary)+'</span></span></td>'+
-        '<td class="col-cat">'+esc(t.game_category||'—')+'</td>'+
-        '<td class="col-pri"><span class="'+priClass(t.priority)+'">'+esc(t.priority||'—')+'</span></td>'+
-        '<td class="col-std">'+esc(t.game_studio||'—')+'</td>'+
-        '<td class="col-mkt">'+esc(t.market||'—')+'</td>'+
-        '<td class="col-bat">'+esc(t.batch||'—')+'</td>'+
-        '<td class="col-stat"><span class="'+statusClass(t._status, t.status_category)+'">'+esc(t._status)+'</span></td>'+
-        '<td class="col-dur">'+fmtDuration(t.created)+'</td>'+
-        '<td class="col-date">'+fmtDate(t.created)+'</td>'+
-        '<td class="col-wish">'+fmtDate(t.wishful_date)+'</td>'+
-        '<td class="col-due">'+fmtDate(t.due_date)+'</td>'+
-        '<td class="col-delay"'+delayStyle+'>'+delayStr+'</td>'+
-        '<td class="col-updated">'+fmtDate(t.updated)+'</td>'+
-        '</tr>';
-      }).join('')+
-      '</tbody></table>';
-  }
-
-  // Keep the per-space rows so focusStatus can re-sort without rebuilding from DATA.
-  let SPACE_ROWS = {};
-
-  function updateIndicator(){
-    const ind = document.getElementById('sort-indicator');
-    const parts = [];
-    if(activeStatusFocus) parts.push('Filter: ' + activeStatusFocus.status);
-    if(currentSort.key !== DEFAULT_SORT.key || currentSort.dir !== DEFAULT_SORT.dir){
-      const labelMap = {
-        key:'ID', summary:'Summary', game_category:'Game Category', priority:'Priority',
-        game_studio:'Studio', market:'Market', batch:'Batch', _status:'Current Status',
-        duration:'Duration', created:'Create Date', wishful_date:'Wishful Date',
-        due_date:'Due Date', delay:'Delay', updated:'Last Update'
-      };
-      parts.push('Sort: ' + (labelMap[currentSort.key] || currentSort.key) + ' (' + currentSort.dir + ')');
-    }
-    if(parts.length === 0){
-      ind.style.display = 'none';
-      return;
-    }
-    document.getElementById('si-label').textContent = parts.join(' • ');
-    ind.style.display = 'flex';
-  }
-
-  function renderPanel(spaceKey){
-    const panel = document.querySelector('.inc-panel[data-space-key="'+CSS.escape(spaceKey)+'"]');
-    if(!panel) return;
-    panel.innerHTML = tableHtml(getDisplayRows(spaceKey), spaceKey);
-  }
-
-  function renderAllPanels(){
-    DATA.spaces.forEach(sp => renderPanel(sp.key));
-    updateIndicator();
-  }
-
-  function renderTables(ticketsByNid){
-    const tabs = document.getElementById('tbl-tabs');
-    const panels = document.getElementById('tbl-panels');
-    const prevActive = document.querySelector('.inc-tab.active');
-    const activeKey = prevActive ? prevActive.dataset.spaceKey : (DATA.spaces[0] && DATA.spaces[0].key);
-    SPACE_ROWS = {};
-    let tabsHtml = '', panelsHtml = '';
-    DATA.spaces.forEach(sp => {
-      const rows = spaceRows(sp.key, ticketsByNid).sort(byUpdatedDesc);
-      SPACE_ROWS[sp.key] = rows;
-      const isActive = sp.key === activeKey;
-      tabsHtml += '<button class="inc-tab'+(isActive?' active':'')+'" data-space-key="'+esc(sp.key)+'">'+
-                  esc(sp.label)+'<span class="tab-cnt">'+rows.length+'</span></button>';
-      panelsHtml += '<div class="inc-panel'+(isActive?' active':'')+'" data-space-key="'+esc(sp.key)+'">'+
-                    '</div>';
-    });
-    tabs.innerHTML = tabsHtml;
-    panels.innerHTML = panelsHtml;
-    tabs.querySelectorAll('.inc-tab').forEach(tab => {
-      tab.addEventListener('click', () => activateTab(tab.dataset.spaceKey));
-    });
-    renderAllPanels();
-  }
-
-  function activateTab(spaceKey, hideSortIndicator=true){
-    document.querySelectorAll('.inc-tab').forEach(t => t.classList.toggle('active', t.dataset.spaceKey===spaceKey));
-    document.querySelectorAll('.inc-panel').forEach(p => p.classList.toggle('active', p.dataset.spaceKey===spaceKey));
-    if(hideSortIndicator && !activeStatusFocus && currentSort.key === DEFAULT_SORT.key && currentSort.dir === DEFAULT_SORT.dir){
-      document.getElementById('sort-indicator').style.display = 'none';
-    } else {
-      updateIndicator();
-    }
-  }
-
-  // Node click → jump to that space's tab, filter to only show this status.
-  function focusStatus(nid){
-    const meta = DATA.meta[nid]; if(!meta) return;
-    const key = meta.space_key;
-    activeStatusFocus = { spaceKey: key, status: meta.title };
-    activateTab(key, false);
-    renderPanel(key);
-    updateIndicator();
-    document.getElementById('table-wrap').scrollIntoView({behavior:'smooth', block:'start'});
-  }
-
-  function clearSortIndicator(){
-    activeStatusFocus = null;
-    currentSort = { ...DEFAULT_SORT };
-    renderAllPanels();
-  }
-
-  document.addEventListener('click', function(e){
-    const th = e.target.closest('th[data-sort-key]');
-    if(!th) return;
-    const nextKey = th.dataset.sortKey;
-    currentSort = currentSort.key === nextKey
-      ? { key: nextKey, dir: currentSort.dir === 'asc' ? 'desc' : 'asc' }
-      : { key: nextKey, dir: nextKey === 'updated' ? 'desc' : 'asc' };
-    renderAllPanels();
-  });
-
-  // ── Refresh (functional when served via server.py) ──────────────────────────
-  const COOLDOWN = { quick: 60, full: 180 };
-  const STORAGE_KEY = { quick: 'gamestatus_quick_refresh_until', full: 'gamestatus_full_refresh_until' };
-  function setCooldown(m){ localStorage.setItem(STORAGE_KEY[m], Date.now() + COOLDOWN[m]*1000); }
-  function getRemaining(m){ return Math.max(0, Math.ceil((parseInt(localStorage.getItem(STORAGE_KEY[m])||0) - Date.now())/1000)); }
-  function updateButtons(){
-    const qR=getRemaining('quick'), fR=getRemaining('full');
-    const q=document.getElementById('btn-quick'), f=document.getElementById('btn-full');
-    if(!q||!f) return;
-    const busy = qR>0 || fR>0;
-    q.disabled=f.disabled=busy;
-    q.innerHTML = '⚡';
-    f.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>';
-    q.title = qR>0 ? 'Quick Refresh ('+qR+'s)' : 'Quick Refresh (~10s)';
-    f.title = fR>0 ? 'Full Refresh ('+fR+'s)' : 'Full Refresh (~2 min)';
-    q.setAttribute('aria-label', q.title);
-    f.setAttribute('aria-label', f.title);
-  }
-  setInterval(updateButtons, 1000); updateButtons();
-
-  function dismissOverlay(){
-    document.getElementById('refresh-overlay').style.display='none';
-    document.getElementById('refresh-close').style.display='none';
-    document.getElementById('refresh-spinner').style.display='block';
-    document.getElementById('refresh-hint').style.display='block';
-  }
-  function showOverlayError(msg){
-    document.getElementById('refresh-spinner').style.display='none';
-    document.getElementById('refresh-hint').style.display='none';
-    document.getElementById('refresh-msg').textContent=msg;
-    document.getElementById('refresh-close').style.display='inline-block';
-  }
-  async function doRefresh(mode){
-    if(getRemaining('quick')>0 || getRemaining('full')>0) return;
-    if(mode==='full' && !confirm('Full Refresh re-fetches all tickets from Jira (~2 min). Continue?')) return;
-    setCooldown(mode); updateButtons();
-    document.getElementById('refresh-spinner').style.display='block';
-    document.getElementById('refresh-hint').style.display='block';
-    document.getElementById('refresh-close').style.display='none';
-    document.getElementById('refresh-overlay').style.display='flex';
-    document.getElementById('refresh-msg').textContent = mode==='quick'
-      ? '⚡ Fetching recently updated tickets…' : '🔄 Fetching all tickets from Jira…';
-    try {
-      await fetch(mode==='quick' ? '/api/refresh' : '/api/refresh/full', {method:'POST'});
-      let n=0;
-      const poll=setInterval(async ()=>{
-        if(++n>100){ clearInterval(poll); showOverlayError('⚠ Timed out waiting for server.'); return; }
-        try {
-          const s=await (await fetch('/api/status')).json();
-          if(!s.running){
-            clearInterval(poll);
-            if(s.error){ localStorage.removeItem(STORAGE_KEY[mode]); updateButtons(); showOverlayError('⚠ '+s.error); }
-            else { document.getElementById('refresh-msg').textContent='✓ Done! Reloading…'; setTimeout(()=>location.reload(),800); }
-          }
-        } catch(e){}
-      }, 3000);
-    } catch(e){
-      localStorage.removeItem(STORAGE_KEY[mode]); updateButtons();
-      showOverlayError('⚠ Cannot reach server.');
-    }
-  }
-
-  // ── Filter engine ────────────────────────────────────────────────────────
-  const PAL = {
-    green:  {bg:'#dcfce7', fg:'#16a34a', border:'#bbf7d0'},
-    orange: {bg:'#ffedd5', fg:'#ea580c', border:'#fdba74'},
-    red:    {bg:'#fee2e2', fg:'#dc2626', border:'#fca5a5'},
-    gray:   {bg:'#f1f5f9', fg:'#64748b', border:'#e2e8f0'},
-  };
-  function capClass(count, limit){
-    if(count<=0) return 'gray';
-    if(!limit||limit<=0) return 'gray';
-    const p=count/limit;
-    if(p<0.6) return 'green';
-    if(p<=0.9) return 'orange';
-    return 'red';
-  }
-
-  // ── Multi-select filter engine ────────────────────────────────────────────
-  // Each entry: { id, label, field, fmt? }
-  //   id    → HTML element id prefix (flt-<id>-btn / flt-<id>-dropdown)
-  //   label → plural label shown in button ("Priorities", "Markets", …)
-  //   field → ticket property name
-  //   fmt   → optional value formatter for display (e.g. month)
-  const FILTER_CFG = [
-    { id:'priority', label:'Priorities',  field:'priority'    },
-    { id:'market',   label:'Markets',     field:'market'      },
-    { id:'batch',    label:'Batches',     field:'batch'       },
-    { id:'gametype', label:'Game Categories', field:'game_category' },
-    { id:'studio',   label:'Studios',      field:'game_studio' },
-    { id:'wishful',  label:'Months',      field:'wishful_date',
-      matchFn: (t, sel) => sel.has((t.wishful_date||'').substring(0,7)),
-      fmt: v => { const [y,m]=v.split('-'); return new Date(+y,+m-1,1).toLocaleString('en',{month:'short',year:'numeric'}); }
-    },
-  ];
-
-  // selected: { id → Set<string> }
-  const selected = {};
-  FILTER_CFG.forEach(cfg => { selected[cfg.id] = new Set(); });
-
-  let filteredTickets = null;
-  let searchTerm = '';
-
-  function applyFilters(){
-    const normalizedSearch = searchTerm.trim().toLowerCase();
-    const hasSearch = normalizedSearch.length > 0;
-    const anyActive = hasSearch || FILTER_CFG.some(cfg => selected[cfg.id].size > 0);
-    filteredTickets = anyActive ? {} : null;
-
-    if(anyActive){
-      for(const [nid, list] of Object.entries(DATA.tickets)){
-        filteredTickets[nid] = list.filter(t =>
-          (!hasSearch || (t.key || '').toLowerCase().includes(normalizedSearch) || (t.summary || '').toLowerCase().includes(normalizedSearch)) &&
-          FILTER_CFG.every(cfg => {
-            if(selected[cfg.id].size === 0) return true;
-            if(cfg.matchFn) return cfg.matchFn(t, selected[cfg.id]);
-            return selected[cfg.id].has(t[cfg.field] || '');
-          })
-        );
-      }
-    }
-
-    for(const [nid, meta] of Object.entries(DATA.meta)){
-      const count = anyActive ? (filteredTickets[nid]||[]).length : meta.count;
-      updateNodePill(nid, count, meta.limit||0);
-    }
-
-    const n = FILTER_CFG.reduce((s, cfg) => s + (selected[cfg.id].size > 0 ? 1 : 0), hasSearch ? 1 : 0);
-    document.getElementById('btn-clear').style.display = anyActive ? '' : 'none';
-    const badge = document.getElementById('flt-badge');
-    badge.style.display = anyActive ? '' : 'none';
-    badge.textContent = n + (n===1?' filter':' filters') + ' active';
-    FILTER_CFG.forEach(cfg => {
-      document.getElementById('flt-'+cfg.id+'-btn').classList.toggle('active', selected[cfg.id].size > 0);
-    });
-
-    const activeTickets = filteredTickets || DATA.tickets;
-    updateSpaceTotals(activeTickets);
-    renderTables(activeTickets);
-  }
-
-  function onMultiChange(cfg){
-    selected[cfg.id] = new Set();
-    document.querySelectorAll('#flt-'+cfg.id+'-dropdown input[type=checkbox]').forEach(cb=>{
-      if(cb.checked) selected[cfg.id].add(cb.value);
-    });
-    const btn = document.getElementById('flt-'+cfg.id+'-btn');
-    const sz = selected[cfg.id].size;
-    if(sz === 0){
-      btn.innerHTML = 'All '+cfg.label+' <span class="flt-arrow">▾</span>';
-    } else if(sz === 1){
-      const v = [...selected[cfg.id]][0];
-      btn.innerHTML = esc(cfg.fmt ? cfg.fmt(v) : v)+' <span class="flt-arrow">▾</span>';
-    } else {
-      btn.innerHTML = sz+' '+cfg.label+' <span class="flt-arrow">▾</span>';
-    }
-    applyFilters();
-  }
-
-  // Close any open dropdown when clicking outside
-  document.addEventListener('click', function(e){
-    FILTER_CFG.forEach(cfg => {
-      const wrap = document.getElementById('flt-'+cfg.id+'-wrap');
-      if(wrap && !wrap.contains(e.target)){
-        document.getElementById('flt-'+cfg.id+'-dropdown').classList.remove('open');
-      }
-    });
-  });
-
-  function toggleDropdown(id, e){
-    e.stopPropagation();
-    const drop = document.getElementById('flt-'+id+'-dropdown');
-    const wasOpen = drop.classList.contains('open');
-    // close all first
-    FILTER_CFG.forEach(cfg => document.getElementById('flt-'+cfg.id+'-dropdown').classList.remove('open'));
-    if(!wasOpen) drop.classList.add('open');
-  }
-
-  function updateNodePill(nid, count, limit){
-    const g = document.querySelector('[data-nid="'+nid+'"]');
-    if(!g) return;
-    const pillR = g.querySelector('.pill-rect');
-    const pillT = g.querySelector('.pill-txt');
-    const cardR = g.querySelector('.card-rect');
-    if(!pillR||!pillT) return;
-    pillT.textContent = (SHOW_WIP_LIMIT && limit) ? count+'/'+limit : String(count);
-    const p = PAL[SHOW_WIP_LIMIT ? capClass(count, limit) : 'gray'];
-    pillR.setAttribute('fill', p.bg);
-    pillT.setAttribute('fill', p.fg);
-    if(cardR) cardR.setAttribute('stroke', p.border);
-  }
-
-  function clearFilters(){
-    searchTerm = '';
-    document.getElementById('flt-search-input').value = '';
-    FILTER_CFG.forEach(cfg => {
-      selected[cfg.id] = new Set();
-      document.querySelectorAll('#flt-'+cfg.id+'-dropdown input[type=checkbox]').forEach(cb=>{ cb.checked=false; });
-      document.getElementById('flt-'+cfg.id+'-btn').innerHTML = 'All '+cfg.label+' <span class="flt-arrow">▾</span>';
-      document.getElementById('flt-'+cfg.id+'-dropdown').classList.remove('open');
-    });
-    applyFilters();
-  }
-
-  window.focusStatus = focusStatus;
-
-  // Collect values per filter from embedded ticket data, then build dropdowns
-  (function initFilters(){
-    const PRI_ORDER = ['Highest','High','Medium','Low','Lowest'];
-    const collected = { priority:[], market:new Set(), batch:new Set(), gametype:new Set(), studio:new Set(), wishful:new Set() };
-    const priSeen = new Set();
-    for(const list of Object.values(DATA.tickets)){
-      for(const t of list){
-        if(t.priority && !priSeen.has(t.priority)){ priSeen.add(t.priority); collected.priority.push(t.priority); }
-        if(t.market)       collected.market.add(t.market);
-        if(t.batch)        collected.batch.add(t.batch);
-        if(t.game_category) collected.gametype.add(t.game_category);
-        if(t.game_studio)  collected.studio.add(t.game_studio);
-        if(t.wishful_date && t.wishful_date.length>=7) collected.wishful.add(t.wishful_date.substring(0,7));
-      }
-    }
-    collected.priority.sort((a,b)=>{ const ia=PRI_ORDER.indexOf(a),ib=PRI_ORDER.indexOf(b); return (ia<0?99:ia)-(ib<0?99:ib); });
-
-    const sortedValues = {
-      priority: collected.priority,
-      market:   [...collected.market].sort(),
-      batch:    [...collected.batch].sort(),
-      gametype: [...collected.gametype].sort(),
-      studio:   [...collected.studio].sort(),
-      wishful:  [...collected.wishful].sort(),
-    };
-
-    function buildDropdown(cfg, values){
-      const drop = document.getElementById('flt-'+cfg.id+'-dropdown');
-      const btn  = document.getElementById('flt-'+cfg.id+'-btn');
-      btn.onclick = (e) => toggleDropdown(cfg.id, e);
-      if(values.length === 0){
-        const empty = document.createElement('div');
-        empty.style.cssText = 'padding:8px 14px;font-size:0.82rem;color:#94a3b8;';
-        empty.textContent = 'No options';
-        drop.appendChild(empty);
-        return;
-      }
-      values.forEach(v=>{
-        const lbl = document.createElement('label');
-        const cb  = document.createElement('input');
-        cb.type = 'checkbox'; cb.value = v;
-        cb.addEventListener('change', () => onMultiChange(cfg));
-        lbl.appendChild(cb);
-        lbl.appendChild(document.createTextNode(cfg.fmt ? cfg.fmt(v) : v));
-        drop.appendChild(lbl);
-      });
-    }
-
-    FILTER_CFG.forEach(cfg => buildDropdown(cfg, sortedValues[cfg.id]));
-  })();
-
-  document.getElementById('flt-search-input').addEventListener('input', (e) => {
-    searchTerm = e.target.value || '';
-    applyFilters();
-  });
-
-  // Initial table render (first space tab active).
-  updateSpaceTotals(DATA.tickets);
-  renderTables(DATA.tickets);
+{{CC_JS}}
 
 {{OVERVIEW_JS}}
 </script>
