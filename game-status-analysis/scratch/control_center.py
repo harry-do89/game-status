@@ -157,6 +157,9 @@ CC_CSS = r"""
   #view-flow .cc-stage-list { display:grid; gap:8px; }
   #view-flow .cc-stage-item { display:flex; justify-content:space-between; gap:12px; padding:10px 12px; background:var(--cc-panel-2);
     border:1px solid var(--cc-hair); border-radius:10px; cursor:pointer; }
+  #view-flow .cc-stage-delta { font-family:var(--cc-mono); font-weight:700; }
+  #view-flow .cc-stage-delta.over { color:var(--cc-danger); }
+  #view-flow .cc-stage-delta.under, #view-flow .cc-stage-delta.zero { color:var(--cc-green); }
   #view-flow .cc-foot { margin-top:26px; border:1px solid var(--cc-hair); border-radius:12px; padding:14px 18px; background:var(--cc-panel);
     color:var(--cc-muted); font-size:12px; line-height:1.6; }
   #view-flow .cc-foot b { color:var(--cc-text); }
@@ -723,11 +726,29 @@ CC_JS = r"""
   function openStageDrawer(stageId){
     const meta = DATA.meta && DATA.meta[stageId] ? DATA.meta[stageId] : {title:stageId, space:''};
     const rows = filteredTickets().filter(t => t.stageId === stageId).sort((a,b) => (a.rank - b.rank) || String(b.lastUpdate).localeCompare(String(a.lastUpdate)));
-    const list = rows.length ? rows.map(t =>
-      '<div class="cc-stage-item" data-game-id="'+esc(t.id)+'"><div><b>'+esc(t.id)+'</b><div class="cc-muted" style="font-size:12px">'+esc(t.name)+'</div></div><span class="cc-rankb '+rankClass(t.rank)+'">'+esc(t.rankDisplay)+'</span></div>'
-    ).join('') : '<div class="cc-muted">No tickets match the current filters for this stage.</div>';
-    openDrawer('Pipeline stage', meta.space + ' - ' + meta.title, rows.length + ' ticket' + (rows.length===1?'':'s'), '<div class="cc-stage-list">'+list+'</div>');
-    root.querySelectorAll('.cc-stage-item[data-game-id]').forEach(el => el.addEventListener('click', () => openGameDrawer(el.dataset.gameId)));
+    const tableRows = rows.map(t => {
+      const bm = t.cat && t.type ? benchmark(t.cat, t.type) : 0;
+      const delta = bm ? t.duration - bm : null;
+      const deltaText = delta == null ? '-' : (delta > 0 ? '+' : '') + delta + 'd';
+      const deltaCls = delta == null ? '' : (delta > 0 ? 'over' : (delta < 0 ? 'under' : 'zero'));
+      return '<tr data-game-id="'+esc(t.id)+'">'+
+        '<td><span class="cc-gid">'+esc(t.id)+'</span></td>'+
+        '<td style="white-space:normal;min-width:220px">'+esc(t.name)+'</td>'+
+        '<td>'+esc(t.cat || '-')+'</td>'+
+        '<td><span class="cc-pill">'+esc(t.type || '-')+'</span></td>'+
+        '<td><span class="cc-rankb '+rankClass(t.rank)+'">'+esc(t.rankDisplay)+'</span></td>'+
+        '<td>'+esc(t.studio || '-')+'</td>'+
+        '<td>'+esc(t.duration)+'d</td>'+
+        '<td><span class="cc-stage-delta '+deltaCls+'">'+esc(deltaText)+'</span></td>'+
+        '<td>'+esc(t.wishful || '-')+'</td>'+
+      '</tr>';
+    }).join('');
+    const body = rows.length
+      ? '<div class="cc-tbl-wrap"><table class="cc-table"><thead><tr><th>ID</th><th>Summary</th><th>Category</th><th>Type</th><th>Rank</th><th>Studio</th><th>Duration</th><th>vs avg</th><th>Wishful</th></tr></thead><tbody>'+tableRows+'</tbody></table></div>'
+        + ((meta.count || 0) > rows.length ? '<p class="cc-muted" style="font-size:11.5px;margin-top:10px">Showing '+rows.length+' loaded ticket'+(rows.length===1?'':'s')+'; stage total is '+(meta.count || 0)+' in the full board.</p>' : '')
+      : '<p class="cc-muted" style="font-size:13px">No tickets match the current filters for this stage'+((meta.count || 0) ? ' (stage total: '+(meta.count || 0)+').' : '.')+'</p>';
+    openDrawer('Pipeline stage', meta.space + ' · ' + meta.title, rows.length + ' ticket' + (rows.length===1?'':'s') + ' in this stage', body);
+    $('cc-dBody').querySelectorAll('tr[data-game-id]').forEach(el => el.addEventListener('click', () => openGameDrawer(el.dataset.gameId)));
   }
   function planItem(k,v){ return '<div class="cc-plan"><div class="t">'+esc(k)+'</div><div class="v">'+esc(v || '-')+'</div></div>'; }
 
