@@ -50,6 +50,31 @@ h1{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:32px;line-he
 .roles-head button{margin-left:auto;font-family:inherit;font-size:11px;letter-spacing:.04em;text-transform:none;border:1px solid var(--line);background:var(--surface-2);color:var(--muted);border-radius:6px;padding:3px 10px;cursor:pointer}
 .roles-head button:hover{border-color:var(--accent);color:var(--ink)}
 .rgroup{display:flex;gap:14px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line)}
+.matrix-scroll{overflow-x:auto}
+.rolematrix{width:100%;border-collapse:separate;border-spacing:0;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden}
+.rolematrix th,.rolematrix td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+.rolematrix tr:last-child th,.rolematrix tr:last-child td{border-bottom:0}
+.rolematrix th:last-child,.rolematrix td:last-child{border-right:0}
+.rolematrix thead th{background:var(--surface-3);font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);font-weight:500;white-space:nowrap}
+.rolematrix thead th small{display:block;text-transform:none;letter-spacing:0;font-size:10px;color:var(--faint);font-weight:400;margin-top:3px;font-family:"Inter",sans-serif}
+.rolematrix th.corner{background:var(--surface-2);color:var(--faint);font-size:10px}
+.rolematrix th.org{background:var(--surface-2);font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);font-weight:500;white-space:nowrap;width:90px}
+.rolematrix .rc-chips{display:flex;flex-wrap:wrap;gap:6px}
+.rolematrix .cell-empty{color:var(--line)}
+.role-desc .rd-funcs{display:flex;gap:6px;margin:9px 0 4px}
+.role-desc .rd-fchip{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:5px;padding:1px 7px}
+.role-desc .rd-cap{display:flex;gap:12px;margin-top:7px;font-size:13px;align-items:baseline}
+.role-desc .rd-lbl{flex:0 0 106px;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint)}
+.role-desc .rd-st{color:var(--ink)}
+.role-desc .rd-cap.lead .rd-lbl{color:var(--accent)} .role-desc .rd-cap.sign .rd-lbl{color:var(--exit)}
+.role-desc .rd-cap.watch .rd-lbl,.role-desc .rd-cap.pull .rd-lbl{color:var(--muted)}
+.rolecats{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden}
+.rcat{padding:13px 15px;border-right:1px solid var(--line)}
+.rcat:last-child{border-right:0}
+.rcat h5{font-family:"Space Grotesk",sans-serif;font-size:13px;font-weight:600;margin:0 0 4px;color:var(--ink)}
+.rcat .rc-desc{font-size:11px;color:var(--faint);margin:0 0 11px;line-height:1.4;min-height:30px}
+.rcat .rc-chips{display:flex;flex-wrap:wrap;gap:6px}
+@media (max-width:760px){.rolecats{grid-template-columns:repeat(2,1fr)}.rcat:nth-child(2){border-right:0}.rcat:nth-child(1),.rcat:nth-child(2){border-bottom:1px solid var(--line)}}
 .rgroup:last-child{border-bottom:0}
 .rglabel{flex:0 0 92px;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);font-weight:500}
 .rgchips{display:flex;flex-wrap:wrap;gap:7px}
@@ -141,6 +166,8 @@ svg.links{position:absolute;inset:0;width:880px;height:760px;z-index:1;pointer-e
 .wholist{display:flex;flex-direction:column;gap:8px}
 .whorow{display:grid;grid-template-columns:118px 1fr;gap:11px;align-items:start;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px 13px}
 .whorow .wr-what{font-size:13.5px;color:var(--ink);line-height:1.45}
+.whorow .wr-caps{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:5px}
+.cap-badge{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.03em;color:var(--accent);border:1px solid var(--accent);border-radius:5px;padding:1px 6px}
 .whorow .wr-src{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--faint);margin-top:4px}
 
 .cttable{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px;border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden}
@@ -223,7 +250,7 @@ footer{margin-top:24px;font-size:12.5px;color:var(--faint);text-align:center}
   </section>
 
   <section class="rolesbar" aria-label="Role filter">
-    <div class="roles-head">Roles — tap to filter the map <button id="clearRole" hidden>Show all</button></div>
+    <div class="roles-head">Roles by function — tap a role to filter the map <button id="clearRole" hidden>Show all</button></div>
     <div id="rolesGrid"></div>
     <div class="role-desc" id="roleDesc">Tap a role to read what it does and highlight the stages where it acts.</div>
   </section>
@@ -269,41 +296,39 @@ footer{margin-top:24px;font-size:12.5px;color:var(--faint);text-align:center}
 </aside>
 
 <script>
-const ROLES={
- "HOS":["Head of Studio","The person accountable for everything a studio ships. Triages new ideas for feasibility, assigns each to a studio, and gives the final acceptance sign-off at Integration QC."],
- "FE":["Front-end","Builds the player-facing game UI on the Studio board during Development, and signs off the FE-facing contract."],
- "QC":["Quality Control","Writes the test cases during Development and runs the full end-to-end test at Integration QC before acceptance."],
- "Art":["Art","Owns all art & audio: moodboard, art style, animation, sound / FX and game assets. Reviews & locks the art at Game Review & Art, then builds the assets during Development."],
- "TD":["Technical Director","Owns the To Do queue: reviews the Definition of Ready, approves the tier & ranking, and decides when a game is pulled into production."],
- "TL":["Technical Lead","Runs one game line under the TD. For a Reskin (new art over an existing game) the TL pulls it straight into Development, skipping Math."],
- "Math":["Math","Owns and pulls the Math stage. Builds the Final Math Model — RTP, volatility & feature math on one agreed standard — and gives early input on the design concept."],
- "Architect":["Architect (SA)","Solution Architect. Reviews & approves each team's solution, freezes & versions the cross-team contracts (disputes → ADR), runs the compliance / cert checklist, and owns end-to-end NFR (latency, throughput, availability) that no single team owns."],
- "Game Engine":["Game Engine","Builds the game engine — core game logic, certified RNG, seed / audit log and round / replay data — on the RNG vertical."],
- "BO":["Back-office","Builds back-office config & tools: config schema with validation, RTP variant / bet limit / market, RBAC and audit trail, on the BO vertical."],
- "Platform":["Platform","Integrates Wallet · Auth · LSC · Promotion · JackPot on the Platform vertical; keeps money = Wallet as the source of truth."],
- "DevOps":["DevOps","Owns CI/CD and deployment: env parity (Staging = Production = cert), blue-green / canary + rollback, and deploy order on contract change."],
- "Data":["Data","Owns reports, KPIs and events: GGR / NGR and actual-vs-theoretical RTP, reconciled with Wallet; defines the event schema and the regulator reports."],
- "HoGD":["Head of Game Design","Owns Game Review & Art (reviews and locks the mechanic) and co-signs the Final Math Model with Math."],
- "GD":["Game Design","The studio's game-design team. Drafts the concept & mechanic, and finalizes the mechanic / logic / rules at the Math stage."],
- "Head of Art":["Head of Art","Approves the moodboard & art direction at Game Review & Art; owns art quality across the studio."],
- "DM":["DM","Delivery Manager — coordinates delivery and release readiness across teams."],
- "Inventory":["Inventory","At Packaging, checks the game's inventory / assets are complete before it can be closed."],
- "QA":["QA","Quality Assurance. At Packaging, checks the game and signs off to close & package it."],
- "Head of PMO":["Head of PMO","Supports the TD on setting tier & ranking at To Do."],
- "PM":["Project Manager","Coordinates delivery. Verifies a game is fully ready and pulls it into production; watches every Game-board stage and is the assignee on the coordination-heavy ones — but never pushes work, teams still pull."],
- "CS":["Customer Success","The business / customer-facing team. Originates game ideas from market demand and sets the Wishful Date — the date the business wants the game live — which feeds prioritization."],
- "C-level":["C-level","C-suite executives. Own and approve which games are prioritized into production."],
- "D-level":["D-level","Director level. Can propose a prioritization, but it only takes effect with C-level approval."]
-};
-const GROUPS=[
- ["Studio",["HOS","FE","QC","QA","Inventory","Art","GD"]],
- ["PACT",["TD","TL","Math","Architect","Game Engine","BO","Platform","DevOps","Data"]],
- ["KCS",["HoGD","Head of Art"]],
- ["PMO",["Head of PMO","PM"]],
- ["Business",["CS"]],
- ["Leadership",["C-level","D-level"]],
- ["Delivery",["DM"]]
+const ROLEDATA=[
+ {team:"Studio",role:"HOS",full:"Head of Studio",funcs:["Management", "Signoff"],own:[],sign:["Done"],pull:[],part:["Prioritized", "Ready for Development"],watch:["Development"],desc:"Head of Studio — accountable for everything the studio ships. Takes part at Prioritized and Ready for Development, watches Development, and gives the final sign-off at Done."},
+ {team:"Studio",role:"FE",full:"Front-end",funcs:["Execution"],own:["Development"],sign:[],pull:[],part:["Development", "Integration QC"],watch:["Game Design", "Game Review & Art", "Contract Alignment"],desc:"Front-end — owns and builds the player-facing game UI during Development and joins Integration QC. Follows Game Design, Game Review & Art and Contract Alignment upstream so the UI matches the design and the agreed contract."},
+ {team:"Studio",role:"QC",full:"Quality Control",funcs:["Execution"],own:[],sign:["Development"],pull:[],part:["Development", "Integration QC"],watch:[],desc:"Quality Control — writes the test cases during Development (signs off its part) and runs the full end-to-end test at Integration QC."},
+ {team:"Studio",role:"QA",full:"QA",funcs:["Signoff"],own:["Packaging"],sign:["Packaging"],pull:[],part:[],watch:[],desc:"Quality Assurance — owns Packaging: checks the finished game and signs off to close and package it."},
+ {team:"Studio",role:"Inventory",full:"Inventory",funcs:["Execution"],own:[],sign:[],pull:[],part:["Packaging"],watch:[],desc:"Inventory — at Packaging, checks the game's assets / inventory are complete before it can be closed."},
+ {team:"Studio",role:"Art",full:"Art",funcs:["Execution"],own:[],sign:[],pull:[],part:["Game Review & Art"],watch:[],desc:"Art — owns all art & audio: moodboard, art style, animation, sound / FX and game assets. Contributes and gets the art locked at Game Review & Art."},
+ {team:"Studio",role:"GD",full:"Game Design",funcs:["Execution", "Reporter"],own:["Game Design"],sign:[],pull:[],part:["Math"],watch:[],desc:"Game Design — the studio's design team; also raises new game ideas (Reporter). Owns the Game Design stage (concept & mechanic) and takes part at Math to finalize the mechanic / logic / rules."},
+ {team:"PACT",role:"TD",full:"Technical Director",funcs:["Management"],own:["To Do"],sign:["To Do"],pull:[],part:[],watch:["Development", "Contract Alignment", "Done"],desc:"Technical Director — owns and signs off the To Do queue: reviews the Definition of Ready, sets tier & ranking, and decides when a game is pulled into production. Watches Contract Alignment, Development and Done."},
+ {team:"PACT",role:"TL",full:"Technical Lead",funcs:["Execution", "Signoff"],own:["Development"],sign:["Development"],pull:[],part:["Contract Alignment"],watch:[],desc:"Technical Lead — runs one game line under the TD. Takes part at Contract Alignment and owns & signs off its team's Development work. For a Reskin, pulls the game straight into Development."},
+ {team:"PACT",role:"Math",full:"Math",funcs:["Execution"],own:["Math"],sign:["Math"],pull:[],part:["Game Design", "Development"],watch:[],desc:"Math — owns and signs off the Math stage (Final Math Model: RTP, volatility & feature math on one agreed standard). Gives early input at Game Design and does the RTP work during Development."},
+ {team:"PACT",role:"Architect",full:"Architect (SA)",funcs:["Execution"],own:["Contract Alignment"],sign:["Contract Alignment", "Development"],pull:[],part:[],watch:["Development"],desc:"Architect (SA) — owns and signs off Contract Alignment: reviews & approves each team's solution and freezes / versions the cross-team contracts (disputes -> ADR). Also signs off Development and watches it end-to-end for NFR & compliance."},
+ {team:"PACT",role:"Game Engine",full:"Game Engine",funcs:["Execution"],own:[],sign:["Development"],pull:[],part:["Development"],watch:[],desc:"Game Engine — builds the game engine (core logic, certified RNG, seed / audit log, round / replay) on the RNG vertical during Development, and signs off its part."},
+ {team:"PACT",role:"BO",full:"Back-office",funcs:["Execution"],own:[],sign:["Development"],pull:[],part:["Development"],watch:[],desc:"Back-office — builds back-office config & tools (config schema + validation, RTP variant / bet limit / market, RBAC & audit) during Development, and signs off its part."},
+ {team:"PACT",role:"Platform",full:"Platform",funcs:["Execution"],own:[],sign:["Development"],pull:[],part:["Development"],watch:[],desc:"Platform — integrates Wallet, Auth, LSC, Promotion & JackPot during Development (money = Wallet as the source of truth), and signs off its part."},
+ {team:"PACT",role:"DevOps",full:"DevOps",funcs:["Execution"],own:[],sign:["Development"],pull:[],part:["Development"],watch:[],desc:"DevOps — owns CI/CD & deployment (env parity, blue-green / canary + rollback, deploy order on contract change) during Development, and signs off its part."},
+ {team:"PACT",role:"Data",full:"Data",funcs:["Execution"],own:[],sign:["Development"],pull:[],part:["Development"],watch:[],desc:"Data — builds reports, KPIs and events (GGR / NGR, actual-vs-theoretical RTP reconciled with Wallet, event schema, regulator reports) during Development, and signs off its part."},
+ {team:"KCS",role:"HoGD",full:"Head of Game Design",funcs:["Signoff"],own:["Game Review & Art"],sign:["Game Review & Art", "Math"],pull:[],part:["Start"],watch:[],desc:"Head of Game Design — owns Game Review & Art (reviews & locks the mechanic) and co-signs the Final Math Model at Math. Also takes part at Start when new ideas come in."},
+ {team:"KCS",role:"Head of Art",full:"Head of Art",funcs:["Signoff"],own:["Game Review & Art"],sign:["Game Review & Art"],pull:[],part:[],watch:[],desc:"Head of Art — owns and signs off the art at Game Review & Art: approves the moodboard & art direction and owns art quality across the studio."},
+ {team:"PMO",role:"Head of PMO",full:"Head of PMO",funcs:["Management", "Signoff"],own:["Ready for Development", "Done"],sign:[],pull:[],part:["To Do"],watch:[],desc:"Head of PMO — owns Ready for Development and Done, and supports the TD on tier & ranking by taking part at To Do."},
+ {team:"PMO",role:"PM",full:"Project Manager",funcs:["Management", "Signoff"],own:["Done"],sign:["Done"],pull:["Ready for Development"],part:["To Do"],watch:["Math", "Contract Alignment", "Development", "Integration QC", "Packaging"],desc:"Project Manager — coordinates delivery. Pulls a ready game into production (Ready for Development), takes part at To Do, and watches every build stage (Math, Contract Alignment, Development, Integration QC, Packaging). Owns and signs off at Done. Never pushes work — teams pull."},
+ {team:"Business",role:"CS",full:"Customer Success",funcs:["Reporter"],own:["Start"],sign:[],pull:[],part:[],watch:[],desc:"Customer Success — business / customer-facing. Originates game ideas at Start and sets the Wishful Date, the go-live date the business wants."},
+ {team:"Leadership",role:"C-level",full:"C-level",funcs:["Reporter", "Approval / Prioritize"],own:["Declined", "Prioritized"],sign:["Declined", "Prioritized"],pull:[],part:[],watch:[],desc:"C-level — owns and approves the Prioritized and Declined decisions: which games go into production and which are dropped."},
+ {team:"Leadership",role:"D-level",full:"D-level",funcs:["Reporter", "Approval / Prioritize"],own:[],sign:[],pull:[],part:["Declined", "Prioritized"],watch:[],desc:"D-level — takes part in the Prioritized / Declined decisions; may propose, but it needs C-level approval to confirm."},
+ {team:"Delivery",role:"DM",full:"Delivery Manager",funcs:["Management"],own:[],sign:[],pull:[],part:[],watch:[],desc:"Delivery Manager — coordinates delivery and release readiness across teams."}
 ];
+const ROLES={};ROLEDATA.forEach(r=>{ROLES[r.role]=[r.full,r.desc];});
+const TEAMORDER=["Studio","PACT","KCS","PMO","Business","Leadership","Delivery"];
+const ORGS=TEAMORDER.map(t=>[t,ROLEDATA.filter(r=>r.team===t).map(r=>r.role)]).filter(x=>x[1].length);
+const COLS=["Reporter","Approval / Prioritize","Management","Execution","Signoff"];
+const FUNCDESC={Reporter:"creates the request","Approval / Prioritize":"approves & prioritizes",Management:"shapes the plan",Execution:"builds the game",Signoff:"owns quality"};
+function funcsOf(role){const r=ROLEDATA.find(x=>x.role===role);return r?r.funcs:[];}
+function roleRec(role){return ROLEDATA.find(x=>x.role===role);}
 
 const STAGES={
  start:{board:"idea",type:"start",name:"Start",sub:"idea logged + flags",purpose:"A new game idea is created and logged on the Idea board with its basic info.",
@@ -397,6 +422,28 @@ const STAGES={
   routes:[["Needs Certification","Certification track — regulated markets (later session)"],["Needs Localization","Localization track — non-English markets (WIP)"],["Default","Release board — release management (later session)"]]}
 };
 
+/* Sync each stage's ownership + who-does-what FROM the roles table (ROLEDATA) */
+(function reconcileStages(){
+  Object.keys(STAGES).forEach(id=>{
+    const nm=STAGES[id].name, owns=[], signoff=[], pulledBy=[], who=[];
+    ROLEDATA.forEach(r=>{
+      const caps=[];
+      if(r.own.includes(nm)){owns.push(r.role);caps.push('Owns');}
+      if(r.sign.includes(nm)){signoff.push(r.role);caps.push('Signs off · DoD');}
+      if(r.pull.includes(nm)){pulledBy.push(r.role);caps.push('Pulls in');}
+      if(r.part.includes(nm))caps.push('Participates');
+      if(r.watch.includes(nm))caps.push('Watches');
+      if(caps.length)who.push([r.role,caps,r.desc]);
+    });
+    const P=roleRec('PM'); let pm=null;
+    if(P){ if(P.own.includes(nm)||P.sign.includes(nm)||P.part.includes(nm)||P.pull.includes(nm))pm='assignee'; else if(P.watch.includes(nm))pm='watcher'; }
+    STAGES[id].pull.owns=owns;
+    STAGES[id].pull.signoff=signoff;
+    STAGES[id].pull.pulledBy=pulledBy;
+    STAGES[id].pull.pm=pm;
+    STAGES[id].who=who;
+  });
+})();
 const LAYOUT={
  start:{x:195,y:64,w:200,h:74}, pending:{x:195,y:164,w:200,h:74}, prioritized:{x:195,y:264,w:200,h:74},
  design:{x:195,y:364,w:200,h:74}, reviewart:{x:195,y:464,w:200,h:74}, ready:{x:195,y:564,w:200,h:74},
@@ -430,9 +477,21 @@ Object.keys(LAYOUT).forEach(id=>{const n=LAYOUT[id],s=STAGES[id];const b=documen
 
 const roleChip=(name,kind)=>{const k=ROLES[name];const cls=kind==='signoff'?'role signoff':(!k?'role auto':'role');const t=k?k[0]+' — '+k[1]:name;return `<span class="${cls}" data-role="${name}" title="${t.replace(/"/g,'&quot;')}" tabindex="0" role="button">${name}</span>`;};
 
-function stagesForRole(role){return Object.keys(STAGES).filter(id=>{const s=STAGES[id];if(role==='PM'&&(s.pull.pm||(s.pull.pulledBy||[]).includes('PM')))return true;return s.pull.owns.includes(role)||s.pull.signoff.includes(role)||s.who.some(w=>w[0]===role);});}
+const NAME2ID={};Object.keys(STAGES).forEach(id=>{NAME2ID[STAGES[id].name]=id;});
+function stagesForRole(role){const r=roleRec(role);if(!r)return [];const names=[...r.own,...r.sign,...r.pull,...r.part,...r.watch];const ids=[];names.forEach(n=>{const id=NAME2ID[n];if(id&&!ids.includes(id))ids.push(id);});return ids;}
 const rolesGrid=document.getElementById('rolesGrid'),roleDesc=document.getElementById('roleDesc'),clearBtn=document.getElementById('clearRole');
-rolesGrid.innerHTML=GROUPS.map(([g,rs])=>`<div class="rgroup"><span class="rglabel">${g}</span><div class="rgchips">${rs.map(k=>`<button class="rchip" data-role="${k}">${k}</button>`).join('')}</div></div>`).join('');
+(function(){
+  const cols=COLS;
+  const thead='<tr><th class="corner">Team ▸ Function</th>'+cols.map(f=>`<th>${f}<small>${FUNCDESC[f]||''}</small></th>`).join('')+'</tr>';
+  const body=ORGS.map(([org,rs])=>{
+    const cells=cols.map(f=>{
+      const inCell=rs.filter(r=>funcsOf(r).includes(f));
+      return '<td>'+(inCell.length?`<div class="rc-chips">${inCell.map(r=>`<button class="rchip" data-role="${r}">${r}</button>`).join('')}</div>`:'<span class="cell-empty">·</span>')+'</td>';
+    }).join('');
+    return `<tr><th class="org">${org}</th>${cells}</tr>`;
+  }).join('');
+  rolesGrid.innerHTML=`<div class="matrix-scroll"><table class="rolematrix"><thead>${thead}</thead><tbody>${body}</tbody></table></div>`;
+})();
 let activeRole=null;
 function selectRole(role){
   if(!ROLES[role])return;
@@ -442,8 +501,11 @@ function selectRole(role){
   document.querySelectorAll('.snode').forEach(n=>{const inn=ids.has(n.dataset.id);n.classList.toggle('hl',inn);n.classList.toggle('dim',!inn);});
   canvas.classList.add('filtering');
   rolesGrid.querySelectorAll('.rchip').forEach(c=>c.classList.toggle('on',c.dataset.role===role));
-  const k=ROLES[role];const names=[...ids].map(id=>STAGES[id].name);
-  roleDesc.innerHTML=`<b>${role} — ${k[0]}.</b> ${k[1]}<span class="acts">${names.length?'Acts in: '+names.join(', '):'Stays outside every step — gates no stage.'}</span>`;
+  const r=roleRec(role);
+  const line=(label,arr,cls)=>arr&&arr.length?`<div class="rd-cap ${cls}"><span class="rd-lbl">${label}</span><span class="rd-st">${arr.join(', ')}</span></div>`:'';
+  let body=line('Ownership',r.own,'lead')+line('Signs off \u00b7 DoD',r.sign,'sign')+line('Pulls in',r.pull,'pull')+line('Participates in',r.part,'do')+line('Watches',r.watch,'watch');
+  if(!body)body=`<div class="rd-cap"><span class="rd-st">Not tied to a specific stage.</span></div>`;
+  roleDesc.innerHTML=`<b>${role} \u2014 ${r.full}.</b> ${r.desc}<div class="rd-funcs">${r.funcs.map(f=>`<span class="rd-fchip">${f}</span>`).join('')}</div>${body}`;
   clearBtn.hidden=false;
 }
 function clearRole(){activeRole=null;document.querySelectorAll('.snode').forEach(n=>n.classList.remove('hl','dim'));canvas.classList.remove('filtering');rolesGrid.querySelectorAll('.rchip').forEach(c=>c.classList.remove('on'));roleDesc.innerHTML='Tap a role to read what it does and highlight the stages where it acts.';clearBtn.hidden=true;}
@@ -460,7 +522,10 @@ function itemList(items,cls){
   }).join('')+'</div>';
 }
 function whoList(items){
-  return '<div class="wholist">'+items.map(w=>`<div class="whorow"><div>${roleChip(w[0])}</div><div><div class="wr-what">${w[1]}</div><div class="wr-src">created on · ${w[2]||'—'}</div></div></div>`).join('')+'</div>';
+  return '<div class="wholist">'+items.map(w=>{
+    const caps=(w[1]||[]).map(c=>`<span class="cap-badge">${c}</span>`).join('');
+    return `<div class="whorow"><div>${roleChip(w[0])}</div><div><div class="wr-caps">${caps}</div><div class="wr-what">${w[2]||''}</div></div></div>`;
+  }).join('')+'</div>';
 }
 function childTable(items){
   return '<table class="cttable"><thead><tr><th>Vertical / Studio</th><th>Story (Summary)</th><th>Status</th><th>Assignee</th></tr></thead><tbody>'+items.map(it=>`<tr><td class="ct-vs">${it[0]}</td><td class="ct-sum">${it[1]}</td><td><span class="st-pill">${it[2]?it[2]:'To do'}</span></td><td>${roleChip(it[3])}</td></tr>`).join('')+'</tbody></table>';
