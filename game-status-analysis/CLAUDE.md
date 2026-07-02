@@ -146,18 +146,19 @@ Top-level timeline rows (GAME/CER/LOC) are **field-driven**, not changelog-drive
 
 ### Development sub-stages
 
-Indented Development children (one row per team, e.g. `Math`/`Platform`/`BE`/`BO`/`Devops`)
+Indented Development children (one row per team, e.g. `Math`/`Platform`/`BE`/`BO`/`Devops`/`VOR`)
 come from the extractor cache file `result/game_status_substages.json`.
 
 - Per-team work lives in **child issues** — the Jira "Work" panel, i.e. issues whose
-  `parent` is the GAME or CER ticket — in separate team projects (`MT`/`PF`/`RNG`/`BO`/`DEVOPS`/…).
+  `parent` is the GAME or CER ticket — in separate team projects (`MT`/`PF`/`RNG`/`BO`/`DEVOPS`/`VOR`/…).
   `script/game_status_extractor.py` queries each GAME/CER parent's children via JQL
   `parent = "<key>"`, labels each child by its **project-key prefix** (`MT`→Math,
   `PF`→Platform, …) via the `[substage_teams]` table in `config.toml`; an unlisted
   prefix is skipped (so a parent can have multiple rows for one team, e.g. two
   `RNG` children both → BE).
 - Each row is built from **three dates** so the modal can score late / early / on-time:
-  - `entered` (actual start) = the child's **Start date**. **No Start date → row omitted.**
+  - `entered` (actual start) = the child's **Start date**. **No Start date → row still included**
+    with `entered: null`, so the modal renders it as not started.
   - `eta` (deadline) = the child's **Due date**.
   - `exited` (actual end) = the child's **resolution date** when Done, else `null` ⇒
     **in progress**.

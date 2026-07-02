@@ -46,7 +46,7 @@ refresh/status routes: `GET /api/ticket/<GAME-key>/timeline`.
 - `Planned` and `Done` are intentionally hidden from the timeline response.
 - `Packaging` stays visible in the response/UI but currently has no field mapping yet,
   so it will return null dates until matching Jira fields are added.
-- Development sub-stages (`BE`/`BO`/`Platform`/`FE`/`Math`) still come from the
+- Development sub-stages (`BE`/`BO`/`Platform`/`FE`/`Math`/`VOR`) still come from the
   extractor cache file `result/game_status_substages.json`, not from the top-level
   issue fields.
 

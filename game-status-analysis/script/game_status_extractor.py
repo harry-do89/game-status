@@ -62,7 +62,7 @@ GAME_STAGES = [
 # Development sub-task project prefixes allowed under the timeline's Development row.
 # Display names are derived from each child issue itself: "[PREFIX] - Summary".
 SUBSTAGE_PREFIXES = set((_cfg.get("substage_teams") or {}).keys()) or {
-    "MT", "PF", "BO", "RNG", "DEVOPS",
+    "MT", "PF", "BO", "RNG", "DEVOPS", "VOR",
 }
 SUBSTAGE_PARENT_SPACES = ("GAME", "CER")
 
@@ -208,7 +208,7 @@ class JiraClient:
         """Resolve the "Start date" custom-field id once via GET /rest/api/3/field.
 
         Cached on the instance. Returns None (logged) if the field can't be found,
-        in which case every sub-task is treated as having no start date (skipped).
+        in which case every sub-task is treated as having no start date.
         """
         if hasattr(self, "_start_field_id"):
             return self._start_field_id
@@ -235,11 +235,11 @@ class JiraClient:
 
         Each GAME/CER parent's per-team work lives in **child issues** (the Jira
         "Work" panel — issues whose `parent` is the parent ticket), in separate
-        team projects (MT, PF, RNG, BO, DEVOPS, …). For each child whose project-key
+        team projects (MT, PF, RNG, BO, DEVOPS, VOR, …). For each child whose project-key
         prefix is whitelisted, the timeline label is built from live issue data:
         "[PREFIX] - child summary". We also read
         three dates so the modal can score late / early / on-time:
-          entered (actual start) = the child's Start date. No Start date → skipped.
+          entered (actual start) = the child's Start date; None renders as not started.
           eta (deadline)         = the child's Due date.
           exited (actual end)    = the child's resolution date when Done, else
                                    None ⇒ still in progress.
@@ -268,9 +268,8 @@ class JiraClient:
                 f = child.get("fields", {})
                 summary = str(f.get("summary") or "").strip()
                 label = f"[{prefix}] - {summary or ckey}"
-                start = str((f.get(start_field) if start_field else None) or "")[:10]
-                if not start:
-                    continue
+                raw_start = f.get(start_field) if start_field else None
+                start = str(raw_start)[:10] if raw_start else None
                 due = str(f.get("duedate") or "")[:10] or None
                 end = str(f.get("resolutiondate") or "")[:10] or None
                 rows.append({
