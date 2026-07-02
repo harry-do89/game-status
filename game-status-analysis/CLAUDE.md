@@ -157,8 +157,7 @@ come from the extractor cache file `result/game_status_substages.json`.
   prefix is skipped (so a parent can have multiple rows for one team, e.g. two
   `RNG` children both → BE).
 - Each row is built from **three dates** so the modal can score late / early / on-time:
-  - `entered` (actual start) = the child's **Start date**. **No Start date → row still included**
-    with `entered: null`, so the modal renders it as not started.
+  - `entered` (actual start) = the child's **Start date**. **No Start date → row omitted.**
   - `eta` (deadline) = the child's **Due date**.
   - `exited` (actual end) = the child's **resolution date** when Done, else `null` ⇒
     **in progress**.
