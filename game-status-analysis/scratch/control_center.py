@@ -395,11 +395,26 @@ CC_JS = r"""
     }
     values.forEach(v => filterSet.add(String(v)));
     host.innerHTML = values.map((v,i) => chipHtml(String(v), colors ? colors[i % colors.length] : palette[i % palette.length])).join('');
+    const syncOn = () => host.querySelectorAll('.cc-chip').forEach(b => b.classList.toggle('on', filterSet.has(b.dataset.value)));
     host.querySelectorAll('.cc-chip').forEach(btn => {
+      let timer = null;
+      // Single-click = toggle in/out (debounced 200ms so a double-click can pre-empt it).
       btn.addEventListener('click', () => {
-        const v = btn.dataset.value;
-        if(filterSet.has(v)) filterSet.delete(v); else filterSet.add(v);
-        btn.classList.toggle('on', filterSet.has(v));
+        if(timer) return;
+        timer = setTimeout(() => {
+          timer = null;
+          const v = btn.dataset.value;
+          if(filterSet.has(v)) filterSet.delete(v); else filterSet.add(v);
+          btn.classList.toggle('on', filterSet.has(v));
+          renderAll();
+        }, 200);
+      });
+      // Double-click = solo this value (only this chip on, all others off).
+      btn.addEventListener('dblclick', () => {
+        clearTimeout(timer); timer = null;
+        filterSet.clear();
+        filterSet.add(btn.dataset.value);
+        syncOn();
         renderAll();
       });
     });

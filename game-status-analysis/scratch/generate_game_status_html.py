@@ -726,11 +726,11 @@ _PAGE = r"""<!DOCTYPE html>
   <div id="refresh-spinner"></div>
   <p id="refresh-msg">Pulling latest data from Jira…</p>
   <p id="refresh-hint">This takes ~10s–2min</p>
-  <button id="refresh-close" onclick="dismissOverlay()">✕ Close</button>
+  <button id="refresh-close" onclick="dismissOverlay()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Close</button>
 </div>
 <div class="rbtns">
-  <button id="btn-full" onclick="doRefresh('full')" title="Full Refresh (~2 min)" aria-label="Full Refresh">🔄</button>
-  <button id="btn-quick" onclick="doRefresh('quick')" title="Quick Refresh (~10s)" aria-label="Quick Refresh">⚡</button>
+  <button id="btn-full" onclick="doRefresh('full')" title="Full Refresh (~2 min)" aria-label="Full Refresh"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+  <button id="btn-quick" onclick="doRefresh('quick')" title="Quick Refresh (~10s)" aria-label="Quick Refresh"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="none" style="vertical-align:-2px"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor"/></svg></button>
 </div>
 
 <!--__TIMELINE_HTML__-->
@@ -742,6 +742,78 @@ _PAGE = r"""<!DOCTYPE html>
   const SHOW_WIP_LIMIT = {{SHOW_WIP_LIMIT}};  // WIP-limit pill/colour display toggle (see generator).
 
   function esc(s){ const d=document.createElement('div'); d.textContent=(s==null?'':s); return d.innerHTML; }
+
+  // ── Refresh (functional when served via server.py) ──────────────────────────
+  // Inline SVG icons (feather-style, stroke = currentColor) — no unicode glyphs.
+  const _svg = (body, sz) => '<svg width="'+(sz||14)+'" height="'+(sz||14)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px">'+body+'</svg>';
+  const ICON = {
+    refresh: _svg('<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>'),
+    bolt:    _svg('<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor" stroke="none"/>'),
+    close:   _svg('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'),
+    check:   _svg('<polyline points="20 6 9 17 4 12"/>'),
+    warn:    _svg('<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'),
+  };
+  const COOLDOWN = { quick: 60, full: 180 };
+  const STORAGE_KEY = { quick: 'gamestatus_quick_refresh_until', full: 'gamestatus_full_refresh_until' };
+  function setCooldown(m){ localStorage.setItem(STORAGE_KEY[m], Date.now() + COOLDOWN[m]*1000); }
+  function getRemaining(m){ return Math.max(0, Math.ceil((parseInt(localStorage.getItem(STORAGE_KEY[m])||0) - Date.now())/1000)); }
+  function updateButtons(){
+    const qR=getRemaining('quick'), fR=getRemaining('full');
+    const q=document.getElementById('btn-quick'), f=document.getElementById('btn-full');
+    if(!q||!f) return;
+    const busy = qR>0 || fR>0;
+    q.disabled=f.disabled=busy;
+    q.innerHTML = ICON.bolt;
+    f.innerHTML = ICON.refresh;
+    q.title = qR>0 ? 'Quick Refresh ('+qR+'s)' : 'Quick Refresh (~10s)';
+    f.title = fR>0 ? 'Full Refresh ('+fR+'s)' : 'Full Refresh (~2 min)';
+    q.setAttribute('aria-label', q.title);
+    f.setAttribute('aria-label', f.title);
+  }
+  setInterval(updateButtons, 1000); updateButtons();
+
+  function dismissOverlay(){
+    document.getElementById('refresh-overlay').style.display='none';
+    document.getElementById('refresh-close').style.display='none';
+    document.getElementById('refresh-spinner').style.display='block';
+    document.getElementById('refresh-hint').style.display='block';
+  }
+  function showOverlayError(msg){
+    document.getElementById('refresh-spinner').style.display='none';
+    document.getElementById('refresh-hint').style.display='none';
+    document.getElementById('refresh-msg').innerHTML = ICON.warn + ' ' + esc(msg);
+    document.getElementById('refresh-close').style.display='inline-block';
+  }
+  async function doRefresh(mode){
+    if(getRemaining('quick')>0 || getRemaining('full')>0) return;
+    if(mode==='full' && !confirm('Full Refresh re-fetches all tickets from Jira (~2 min). Continue?')) return;
+    setCooldown(mode); updateButtons();
+    document.getElementById('refresh-spinner').style.display='block';
+    document.getElementById('refresh-hint').style.display='block';
+    document.getElementById('refresh-close').style.display='none';
+    document.getElementById('refresh-overlay').style.display='flex';
+    document.getElementById('refresh-msg').innerHTML = mode==='quick'
+      ? ICON.bolt + ' Fetching recently updated tickets…' : ICON.refresh + ' Fetching all tickets from Jira…';
+    try {
+      const base = window.location.pathname.startsWith('/game-status') ? '/game-status' : '';
+      await fetch(base + (mode==='quick' ? '/api/refresh' : '/api/refresh/full'), {method:'POST'});
+      let n=0;
+      const poll=setInterval(async ()=>{
+        if(++n>100){ clearInterval(poll); showOverlayError('Timed out waiting for server.'); return; }
+        try {
+          const s=await (await fetch(base + '/api/status')).json();
+          if(!s.running){
+            clearInterval(poll);
+            if(s.error){ localStorage.removeItem(STORAGE_KEY[mode]); updateButtons(); showOverlayError(s.error); }
+            else { document.getElementById('refresh-msg').innerHTML = ICON.check + ' Done! Reloading…'; setTimeout(()=>location.reload(),800); }
+          }
+        } catch(e){}
+      }, 3000);
+    } catch(e){
+      localStorage.removeItem(STORAGE_KEY[mode]); updateButtons();
+      showOverlayError('Cannot reach server.');
+    }
+  }
 
 /*__TIMELINE_JS__*/
 
